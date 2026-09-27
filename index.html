@@ -1,0 +1,2638 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>도덕 AI 도우미</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hi+Melody&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --chatbg: #FDEFF6;
+    --chatbg2: #F6E4F7;
+    --topbar: #C9A2E8;
+    --topbar-text: #FFFFFF;
+    --ai-bubble: #FFFFFF;
+    --ai-text: #4A3A55;
+    --user-bubble: #FFD3E4;
+    --user-text: #6B2C4C;
+    --accent: #B98CE3;
+    --accent-dark: #9A6BCB;
+    --meta: #B29BC7;
+    --danger: #FF8FA0;
+    --shadow: 0 3px 8px rgba(180,140,220,0.18);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #F1E4F5;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--ai-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #app {
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    height: calc(100vh - 32px);
+    max-height: 900px;
+    display: flex;
+    flex-direction: column;
+    background:
+      radial-gradient(circle at 10% 15%, rgba(255,255,255,0.5) 2px, transparent 2px) 0 0/28px 28px,
+      linear-gradient(180deg, var(--chatbg) 0%, var(--chatbg2) 100%);
+    box-shadow: 0 4px 28px rgba(0,0,0,0.22);
+    border-radius: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  #statusbar {
+    flex: 0 0 auto;
+    background: var(--topbar);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 20px 5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  #statusbar .sb-icons { display: flex; align-items: center; gap: 5px; }
+  #statusbar svg { display: block; }
+  header {
+    flex: 0 0 auto;
+    background: linear-gradient(135deg, var(--topbar), #E3B8F0);
+    color: var(--topbar-text);
+    padding: 14px 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 3px 10px rgba(150,100,190,0.25);
+    border-radius: 0 0 22px 22px;
+    z-index: 5;
+  }
+  .avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    flex: 0 0 auto;
+    box-shadow: 0 2px 6px rgba(150,100,190,0.3);
+  }
+  .head-text { flex: 1; min-width: 0; }
+  .head-text .name {
+    font-family: 'Hi Melody', cursive;
+    font-weight: 400;
+    font-size: 19px;
+    line-height: 1.3;
+  }
+  .head-text .status {
+    font-size: 12.5px;
+    color: rgba(255,255,255,0.85);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .head-text .status .led {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #B6FFCB;
+    box-shadow: 0 0 4px #B6FFCB;
+  }
+  #reset-btn {
+    flex: 0 0 auto;
+    display: flex; align-items: center; gap: 5px;
+    padding: 7px 12px 7px 9px;
+    border-radius: 999px;
+    border: none;
+    background: rgba(255,255,255,0.22);
+    color: #fff;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform .15s, background .15s;
+    white-space: nowrap;
+  }
+  #reset-btn .reset-icon { font-size: 15px; display: inline-block; }
+  #reset-btn:hover { background: rgba(255,255,255,0.35); }
+  #reset-btn:active .reset-icon { transform: rotate(-90deg); }
+  #reset-btn:active { transform: scale(0.95); }
+  #transcript {
+    flex: 1;
+    padding: 22px 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .row { display: flex; flex-direction: column; margin: 5px 0; max-width: 100%; }
+  .row.grouped-row { margin-top: 2px; }
+  .row.ai { align-items: flex-start; }
+  .row.user { align-items: flex-end; }
+  .bwrap { display: flex; flex-direction: column; max-width: 84%; }
+  .row.ai .bwrap { align-items: flex-start; }
+  .row.user .bwrap { align-items: flex-end; }
+  .timestamp {
+    font-size: 10.5px;
+    color: #9C8FA8;
+    margin: 3px 6px 0;
+  }
+  .bubble {
+    max-width: 100%;
+    padding: 9px 13px;
+    line-height: 1.5;
+    font-size: 16px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+  .bubble.ai {
+    background: var(--ai-bubble);
+    color: var(--ai-text);
+    border-radius: 20px 20px 20px 6px;
+  }
+  .bubble.ai.grouped { border-radius: 18px; margin-bottom: 2px; }
+  .bubble.ai.tight { border-top-left-radius: 18px; }
+  .bubble.user {
+    background: var(--user-bubble);
+    color: var(--user-text);
+    border-radius: 20px 20px 6px 20px;
+  }
+  .bubble.user.grouped { border-radius: 18px; margin-bottom: 2px; }
+  .bubble.user.tight { border-top-right-radius: 18px; }
+  .bubble.thinking {
+    background: var(--ai-bubble);
+    color: var(--meta);
+    border-radius: 20px 20px 20px 6px;
+    font-size: 14px;
+    padding: 12px 16px;
+  }
+  .dot-flash { display: inline-block; }
+  .dot-flash span {
+    display: inline-block; width: 6px; height: 6px; margin-right: 3px;
+    border-radius: 50%; background: var(--accent);
+    animation: blink 1.2s infinite ease-in-out;
+  }
+  .dot-flash span:nth-child(2) { animation-delay: .2s; }
+  .dot-flash span:nth-child(3) { animation-delay: .4s; }
+  .user-dots span { background: var(--user-text); }
+  .typing-bubble { padding: 10px 14px; }
+  @keyframes blink { 0%,80%,100%{opacity:.25;} 40%{opacity:1;} }
+  .case-box {
+    max-width: 86%;
+    margin: 4px 0 2px;
+    border-radius: 20px;
+    padding: 15px 17px 14px;
+    background: var(--ai-bubble);
+    box-shadow: var(--shadow);
+    font-size: 16px;
+    line-height: 1.65;
+    border: 2px dashed #E6C9F2;
+  }
+  .case-box .tag {
+    display: block;
+    font-family: 'Hi Melody', cursive;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent-dark);
+    margin-bottom: 6px;
+  }
+  .hint {
+    font-size: 13px;
+    color: var(--meta);
+    padding: 2px 6px 4px;
+  }
+  .transcript-hint {
+    margin-top: 2px;
+    max-width: 84%;
+  }
+  .todo-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: 84%;
+    margin: 2px 0;
+    padding: 10px 14px;
+    border-radius: 14px;
+    border: 1.5px dashed #F2B84B;
+    background: #FFF6E5;
+    color: #8A5A00;
+    font-size: 14.5px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .todo-icon { flex: 0 0 auto; font-size: 15px; margin-top: 1px; }
+  #inputzone {
+    flex: 0 0 auto;
+    background: #FBF3FA;
+    padding: 16px 14px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    border-top: 2px solid #F1DCF2;
+    border-radius: 22px 22px 0 0;
+  }
+  .choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+    padding: 0 2px;
+  }
+  button.chip {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 500;
+    font-size: 14.5px;
+    padding: 9px 15px;
+    border-radius: 999px;
+    border: none;
+    background: #F3E4FB;
+    color: var(--accent-dark);
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(180,140,220,0.15);
+    transition: transform .1s, background .15s;
+  }
+  button.chip:hover { background: #E9D2F7; }
+  button.chip:active { transform: scale(0.94); }
+  button.chip.secondary { background: #F0F0F0; color: #8A8A8A; }
+  button.chip.warn { background: #FFE1E6; color: #E0567A; }
+  button.chip:disabled { opacity: .35; cursor: default; }
+  .textrow {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .textrow textarea {
+    flex: 1;
+    resize: none;
+    min-height: 40px;
+    max-height: 110px;
+    padding: 10px 15px;
+    border-radius: 20px;
+    border: none;
+    background: #fff;
+    color: #232323;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 16px;
+    line-height: 1.4;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
+  }
+  .textrow textarea:focus { outline: none; box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .textrow textarea::placeholder { color: #A6A6A6; }
+  .textrow button.send {
+    flex: 0 0 auto;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 3px 6px rgba(180,140,220,0.4);
+  }
+  .textrow button.send:disabled { opacity: .4; }
+  .textrow button.send:active { transform: scale(0.92); }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+
+  /* ---- 설정 화면 (API 키 입력 / 방 정보) ---- */
+  #setup-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; align-items: flex-start; justify-content: center;
+    background: linear-gradient(160deg, #C9A2E8, #F1E4F5);
+    padding: 20px;
+    overflow-y: auto; /* 설정 항목이 늘어 휴대폰 화면보다 길어져도 스크롤되게 */
+  }
+  .setup-card {
+    background: #fff;
+    border-radius: 22px;
+    padding: 28px 24px;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    margin: auto 0;
+  }
+  .lesson-settings {
+    text-align: left; background: #FBF7FD; border: 1.5px solid #EBDDF5;
+    border-radius: 14px; padding: 12px 14px; margin: 6px 0 10px;
+  }
+  .lesson-settings .ls-title { font-weight: 700; font-size: 14px; color: var(--accent-dark); margin-bottom: 8px; }
+  .lesson-settings label { display: block; font-size: 13px; color: #4A3A55; margin: 8px 0 4px; }
+  .setup-card select {
+    width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 12px;
+    border: 1.5px solid #E0C9F0; font-size: 14px; background: #fff; color: #3A2A45;
+  }
+  .lesson-settings input { margin: 6px 0 0; }
+  .ls-check input { width: auto !important; margin: 3px 0 0 !important; flex: 0 0 auto; }
+  .ls-note { font-size: 12px; color: #8A7A98; margin-top: 6px; line-height: 1.5; }
+  .setup-emoji { font-size: 40px; margin-bottom: 6px; }
+  .setup-card h2 { margin: 0 0 14px; font-family: 'Hi Melody', cursive; font-size: 22px; color: var(--accent-dark); }
+  .setup-card p { font-size: 14px; line-height: 1.6; color: #4A3A55; margin: 0 0 14px; }
+  .setup-card input {
+    width: 100%; box-sizing: border-box;
+    padding: 12px 14px; border-radius: 12px;
+    border: 1.5px solid #E0C9F0; font-size: 14px;
+    margin-bottom: 10px;
+  }
+  .setup-card button {
+    width: 100%; padding: 13px; border-radius: 12px; border: none;
+    background: var(--accent); color: #fff; font-size: 15px; font-weight: 600;
+    cursor: pointer; margin-bottom: 8px;
+  }
+  .setup-card button:active { transform: scale(0.98); }
+  .setup-card button:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+  .setup-secondary-btn { background: #F0E4FA !important; color: var(--accent-dark) !important; }
+  .setup-hint { font-size: 12px; color: #9C8FA8; }
+  .setup-hint a { color: var(--accent-dark); }
+  .setup-error { color: #E0567A; font-size: 13px; min-height: 18px; }
+  .room-qr { width: 160px; height: 160px; margin: 8px auto; display: block; border-radius: 10px; }
+  .room-link {
+    font-size: 12px; color: #6B5A80; word-break: break-all;
+    background: #F8F3FB; border-radius: 8px; padding: 8px; margin-bottom: 10px;
+  }
+  #share-btn {
+    flex: 0 0 auto;
+    background: rgba(255,255,255,0.22);
+    border: none; color: #fff; border-radius: 999px;
+    font-size: 16px; width: 34px; height: 34px; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div id="setup-overlay">
+  <div class="setup-card">
+    <div class="setup-emoji">🤖</div>
+    <h2>도덕 AI 도우미</h2>
+
+    <div id="setup-step-key">
+      <p>선생님의 Claude API 키를 입력해 주세요.<br>이 키는 서버에만 저장되고, 학생에게는 노출되지 않아요.</p>
+      <input id="setup-api-key" type="password" placeholder="Claude API 키 붙여넣기 (sk-ant-로 시작)">
+      <button id="setup-create-btn">방 만들기</button>
+      <p class="setup-hint">키가 없으신가요? <a href="https://platform.claude.com/docs/en/get-api-key" target="_blank" rel="noopener">Claude Console 키 발급 안내</a>를 참고해 주세요. 사용하려면 Console에서 크레딧(선불)을 먼저 충전해야 해요.</p>
+      <div id="setup-error" class="setup-error"></div>
+    </div>
+
+    <div id="setup-step-room" style="display:none;">
+      <p>✅ 방이 만들어졌어요! (48시간 동안 유효)</p>
+      <div class="lesson-settings">
+        <div class="ls-title">📚 수업 설정</div>
+        <label for="lesson-virtue">탐구할 덕목</label>
+        <select id="lesson-virtue"></select>
+        <input id="lesson-virtue-custom" type="text" placeholder="덕목 이름을 입력하세요 (예: 책임)" style="display:none;">
+        <div id="lesson-grade-row" style="display:none;">
+          <label for="lesson-grade">학년</label>
+          <select id="lesson-grade">
+            <option value="">학년을 골라 주세요</option>
+            <option value="3">3학년</option>
+            <option value="4">4학년</option>
+            <option value="5">5학년</option>
+            <option value="6">6학년</option>
+          </select>
+        </div>
+        <div class="ls-note" id="lesson-note"></div>
+      </div>
+      <p class="setup-hint" style="margin:0 0 8px;text-align:left;background:#FFF7E6;border-radius:10px;padding:8px 10px;color:#7A5A1A;">🔒 학생이 활동2 마지막(다시 정리한 뜻)과 활동3에서 쓴 글은 질문·가상 상황을 만들기 위해 AI 회사(Anthropic) 서버로 보내져요. 전화번호·주소 같은 개인정보와 욕설은 자동으로 막지만, <b>이름은 자동으로 다 걸러지지 않으니</b> 수업 전에 "이름·개인정보는 쓰지 않기"를 꼭 안내해 주세요.</p>
+      <p class="setup-hint" id="lesson-share-hint" style="margin:0 0 4px;">아래 QR·링크로 들어온 학생은 위 설정으로 시작해요.</p>
+      <img id="room-qr" class="room-qr" alt="학생용 QR 코드">
+      <div class="room-link" id="room-link-display"></div>
+      <button id="room-copy-btn" class="setup-secondary-btn">🔗 링크 복사</button>
+      <button id="room-continue-btn">확인, 테스트해볼게요 →</button>
+      <p class="setup-hint" style="margin-top:10px;"><a href="#" id="room-restart-link">다른 API 키로 새로 시작하기</a></p>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <div id="statusbar">
+    <span id="clock">9:41</span>
+    <span class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="6" width="3" height="5" rx="0.5" fill="currentColor"/><rect x="4.5" y="4" width="3" height="7" rx="0.5" fill="currentColor"/><rect x="9" y="2" width="3" height="9" rx="0.5" fill="currentColor"/><rect x="13.5" y="0" width="3" height="11" rx="0.5" fill="currentColor"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 2.2c2.1 0 4 .8 5.5 2.2l-1.4 1.4A6 6 0 0 0 8 4c-1.6 0-3.1.6-4.1 1.8L2.5 4.4C4 3 5.9 2.2 8 2.2z" fill="currentColor"/><path d="M8 6c1 0 1.9.4 2.6 1l-1.3 1.4a1.8 1.8 0 0 0-2.6 0L5.4 7A3.6 3.6 0 0 1 8 6z" fill="currentColor"/><circle cx="8" cy="9.3" r="1" fill="currentColor"/></svg>
+      <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="0.5" y="0.5" width="20" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="15" height="7" rx="1.3" fill="currentColor"/><rect x="21.5" y="3.5" width="1.6" height="4" rx="0.8" fill="currentColor"/></svg>
+    </span>
+  </div>
+  <header>
+    <div class="avatar">🤖</div>
+    <div class="head-text">
+      <div class="name">도덕 AI 도우미</div>
+      <div class="status"><span class="led"></span><span id="stage-text">최초 접속</span></div>
+    </div>
+    <button id="share-btn" title="학생 공유 링크 보기" onclick="showRoomInfo()" style="display:none;">🔗</button>
+    <button id="reset-btn" title="대화 초기화" onclick="resetAll()"><span class="reset-icon">🔄</span>대화 초기화</button>
+  </header>
+  <div id="transcript"></div>
+  <div id="inputzone"></div>
+</div>
+
+<script>
+const STAGE_LABEL = {
+  landing: '최초 접속', act1_intro: '활동1 안내', act1_interest: '활동1 · 관심사',
+  act1_case: '활동1 · 사례', act1_def1: '활동1 · 정의', act2_menu: '활동2 · 맥락 선택',
+  act2_situation: '활동2 · 상황', act2_def2: '활동2 · 정의', act3_q1: '활동3 · 생각해보기',
+  act3_situation: '활동3 · 가상 상황', end: '종료'
+};
+
+const INITIAL_STATE = {
+  step: 'landing',
+  value: '', interest: null,
+  def1: '', def2: '',
+  caseIdx: 0, cases: [], caseEasedThisSlot: false, caseAnswerRejectCount: 0,
+  context: '', situationEased: false, situationHistory: [],
+  q1choice: null, q1answer1: '', q1answer2: '', q1reason: '', direction: null, counterHistory: [],
+  situationTexts: [], situationDirections: [], currentSituationIdx: 0,
+  busy: false,
+};
+const state = JSON.parse(JSON.stringify(INITIAL_STATE));
+
+// ---------- prompts (editable via prompts.json when deployed) ----------
+const DEFAULT_PROMPTS = {
+  "safetyRules": "[안전 규칙] 폭력·잔인한 묘사, 성적 내용, 공포·혐오, 특정 집단 비하, 불법행위 조장, 자살·학대, 정치적 편향, 게임 소재는 쓰지 않는다. 전쟁·테러·대형 참사 장면은 쓰지 않으며, 자연재해 같은 어려움은 배경으로 짧게만 언급하고 피해 장면을 묘사하지 않는다. 초등학생 인물이 현실에서 할 수 없는 일(예: 혼자 해외 모금 운동을 이끎)을 하는 설정, 작위적으로 완벽한 선인이나 악인은 쓰지 않는다. 초등 {{grade}}학년이 뉴스를 몰라도 이해할 수 있는 쉬운 수준으로 쓴다.",
+  "commonChecks": [
+    "본문 외에 제목·해설·점검 과정·교훈 설명이 섞여 있거나, 5문장 이상으로 길다.",
+    "안전 규칙에 어긋나는 소재(폭력·잔인함, 성적 내용, 공포·혐오, 특정 집단 비하, 불법행위 조장, 자살·학대, 정치적 편향, 전쟁·대형 참사 장면, 게임)가 들어 있다.",
+    "초등 {{grade}}학년이 실제로 겪거나 쉽게 이해하기 어려운 비현실적인 상황이다.",
+    "관심사가 이야기를 지배하거나, 마음과 행동이 향하는 대상이 덕목의 정의에 맞지 않는다(예: 사람을 향해야 하는 덕목인데 동물만 향함).",
+    "인물의 생각이나 마음이 전혀 드러나지 않고 행동만 나열되어 있다.",
+    "이야기 안에서 교훈이나 정답, 덕목의 정의를 직접 말해준다."
+  ],
+  "formatLine": "[작성 형식] 이야기 본문만 정확히 2~3문장으로 쓴다. 제목·설명·따옴표·점검 과정은 출력하지 않는다. 인물의 마음을 나타내는 말은 이 이야기의 상황에 맞게 새로 쓰고, 어디에나 붙일 수 있는 상투적인 문구는 쓰지 않는다.\n{{gradeStyle}}",
+  "finalCheckIntro": "[최종 점검 — 출력하지 말고 속으로만 수행] 초안을 쓴 뒤, 아래 중 하나라도 해당하면 처음부터 다시 써라. 통과한 최종 이야기만 출력하라.",
+  "avoidLineTemplate": "[앞 이야기와 겹치지 않기 — 필수] 아래는 지금까지 이 학생에게 보여준 이야기들이다. 장소, 사건의 종류(예: 길을 잃은 사람, 짐을 떨어뜨린 사람, 표를 못 사는 사람), 첫 문장을 여는 방식, 마음을 표현하는 문구가 겹치지 않게, 완전히 다른 장면으로 새 이야기를 써라. 등장인물 이름만 바꾸는 것은 새 이야기가 아니다.\n{{list}}",
+  "easierLine": "[쉽게] 이전 이야기보다 더 짧은 문장과 쉬운 낱말로, 초등학생에게 익숙한 장면으로 써라. 단, 사례 유형(또는 이야기의 목적)은 그대로 지킨다.",
+  "interestLineWithInterest": "[관심사] 이 학생의 관심사: \"{{interest}}\". 관심사는 장소·배경·소품을 나타내는 한 구절로만 짧게 쓴다(예: '강아지와 산책하던 길에', '미술 학원 앞에서'). 사건 전개와 인물의 행동은 관심사와 무관하게 현실적이어야 하고, 마음과 행동이 향하는 대상은 덕목의 정의에 맞아야 한다(관심사가 그 대상을 대신하면 안 된다). 관심사를 자연스럽게 넣기 어려우면 넣지 말고 평범한 배경으로 쓴다 — 관심사보다 이야기의 현실성이 우선이다.",
+  "interestLineWithout": "[관심사] 특별한 관심사 없이 초등학생에게 익숙한 일상 장면으로 쓴다.",
+  "interestExamplesTemplate": "아래 후보 목록 중에서 [{{value}}]{{waGwa}} 가장 자연스럽게 어울리는 6개를 골라라.\n\n후보 목록: {{pool}}\n\n기준: 이 단어를 배경·소재로 삼았을 때 [{{value}}]{{iGa}} 실제로 잘 드러나는 이야기를 만들 수 있는지를 보고 골라라. 이 후보 목록은 이미 사람과 사람 사이의 상호작용을 자연스럽게 끌어내기 쉬운 소재들로만 엄선되어 있으니, 그중에서도 [{{value}}]{{waGwa}} 특히 잘 어울리는 것을 우선하라.\n\n반드시 위 후보 목록 안에 있는 단어만 골라라. 목록에 없는 새 단어를 만들어내거나 변형하지 마라(예: '시장'을 '시장체험'으로 바꾸는 것 금지).\n\n쉼표로만 구분해서 6개를 출력하라. 다른 설명 없이 \"단어1, 단어2, 단어3, 단어4, 단어5, 단어6\" 형식만 출력하라.",
+  "interestPool": [
+    "동물",
+    "운동",
+    "음악",
+    "미술",
+    "만들기",
+    "요리",
+    "여행",
+    "동아리 활동"
+  ],
+  "noneWords": [
+    "없어",
+    "없음",
+    "없다",
+    "없습니다",
+    "모르겠",
+    "모름",
+    "몰라"
+  ],
+  "caseTypeMap": "[네 가지 사례 유형 — 학생은 같은 덕목에 대해 네 유형을 차례로 보며 [{{value}}]의 경계를 탐구한다. 각 사례는 자기 유형으로만 읽혀야 하고 다른 유형과 헷갈리면 안 된다]\n- 전형적 사례: 누가 봐도 [{{value}}]{{ida}}.\n- 반대 사례: 누가 봐도 [{{value}}]{{iGa}} 아니다.\n- 관련 사례: [{{value}}]처럼 보이지만 실은 이름이 분명한 다른 개념이다.\n- 경계 사례: [{{value}}]{{ro}} 볼 점과 걸리는 점이 함께 있어 판단이 갈린다.",
+  "caseTypes": {
+    "model": {
+      "label": "전형적 사례",
+      "askTemplate": "이 이야기에서 찾을 수 있는 [{{value}}]의 모습은 무엇인가요?",
+      "definition": "[이번에 만들 유형: 전형적 사례] 위 덕목 정보의 정의적 속성을 빠짐없이 갖춰, 누가 봐도 [{{value}}]{{iRago}} 동의할 수 있는 사례. [{{value}}]{{eunNeun}} 눈에 보이는 행동뿐 아니라 말·태도·마음가짐으로도 드러날 수 있으니, 정의에 맞는 범위에서 다양한 형태를 시도하라.",
+      "mind": "[인물의 마음 — 필수] 그 행동이 [{{value}}]에서 나온 마음임을 인물의 생각이나 느낌 한 구절로 드러내라. 가능하면 그렇게 하지 않아도 이상하지 않을 그럴듯한 이유(귀찮음, 손해, 나와 상관없는 사람 등)를 함께 두고, 그럼에도 [{{value}}]답게 행동하게 하라.",
+      "failChecks": [
+        "덕목 정보의 정의적 속성 중 이야기에서 드러나지 않는 것이 있다 → 전형 사례가 아니다.",
+        "동기가 섞였거나, 결과가 의도와 어긋났거나, 일부만 실천했거나, 상대나 상황이 정말 그것을 필요로 했는지 불확실하다 → 경계 사례로 읽힌다.",
+        "[{{value}}]보다 다른 개념(예: {{relatedConcepts}})으로 더 잘 설명된다 → 관련 사례로 읽힌다."
+      ]
+    },
+    "contrary": {
+      "label": "반대 사례",
+      "askTemplate": "이 이야기에는 [{{value}}]의 어떤 모습이 없다고 생각하나요?",
+      "definition": "[이번에 만들 유형: 반대 사례] 덕목 정보의 정의적 속성이 하나도 없어, 누가 봐도 [{{value}}]{{iGa}} 아니라고 동의할 수 있는 사례. [{{value}}]{{iGa}} 필요한 순간을 마주친다는 구조는 전형적 사례와 같지만, 인물은 [{{value}}]{{waGwa}} 반대로 행동한다. 장소·사건·인물은 앞 사례와 겹치지 않게 새로 정한다.",
+      "mind": "[인물의 마음 — 필수] 인물이 [{{value}}]답게 행동하지 않게 만든 생각(무관심, 귀찮음, 손해 계산, 편견 등)을 한 구절 드러내라. 그 생각이 끝까지 이겨서 인물은 행동하지 않거나 반대로 행동하고, 결말에서 반성하거나 마음을 바꾸지 않는다.",
+      "failChecks": [
+        "인물이 결국 [{{value}}]답게 행동하거나, 마지막에 반성·후회하며 마음을 바꾼다 → 반대 사례가 아니다.",
+        "인물이 망설이다 일부만 실천하는 등 [{{value}}]{{iGa}} 조금이라도 실천된다 → 경계 사례로 읽힌다.",
+        "[{{value}}]{{iGa}} 발휘될 수 있었던 순간이 이야기에 없어, 비교할 거리가 없는 평범한 일상이다.",
+        "인물을 지나치게 나쁜 사람으로 과장해 작위적이다."
+      ]
+    },
+    "related": {
+      "label": "관련 사례",
+      "askTemplate": "이 이야기는 [{{value}}]{{waGwa}} 어떤 점이 같고, 어떤 점이 다른가요?",
+      "definition": "[이번에 만들 유형: 관련 사례] 겉보기엔 [{{value}}]{{waGwa}} 비슷한 행동이나 상황이지만, 실제로는 이름이 분명한 다른 개념의 전형적 예시인 사례. 먼저 [{{value}}]{{iGa}} 아닌 다른 개념을 하나 정하라(이 덕목과 헷갈리기 쉬운 개념: {{relatedConcepts}} — 목록 밖이어도 된다). 그다음 그 개념의 전형적 사례를 써라. 정한 개념의 이름은 이야기에 쓰지 않는다.",
+      "mind": "[인물의 마음 — 필수] 인물의 행동이 정한 그 개념에서 나온 마음임을 드러내라(예: 의무감이라면 '맡은 일이니까 해야 한다는 생각에', 우정이라면 '가장 친한 친구라서'). [{{value}}]의 핵심이 되는 마음은 드러내지 않는다.",
+      "failChecks": [
+        "[{{value}}]{{iGa}} 아닌 다른 개념 이름을 뚜렷하게 붙일 수 없다.",
+        "줄거리가 전형적인 [{{value}}] 사례와 사실상 같고, 마음을 나타내는 단어만 바뀌었다.",
+        "읽고 나서 '이것도 [{{value}}] 아닌가?'라는 판단이 우세하다 → 전형 사례나 경계 사례로 읽힌다.",
+        "[{{value}}]{{waGwa}} 비슷해 보이는 행동이나 상황이 전혀 없어 비교할 거리가 없다."
+      ]
+    },
+    "borderline": {
+      "label": "경계 사례",
+      "askTemplate": "이 이야기에서 [{{value}}]{{iRago}} 볼 수 있는 점과, 그렇게 보기 어려운 점은 각각 무엇인가요?",
+      "definition": "[이번에 만들 유형: 경계 사례] 덕목 정보의 정의적 속성 중 일부는 있고 일부는 없거나 불확실해서, [{{value}}]인지 아닌지 판단이 갈리는 사례. 아래 걸리는 점 중 하나 이상이 이야기 문장 안에 분명히 드러나야 한다: 정의적 속성 중 일부가 빠지거나 불확실함 / 동기가 섞여 있음 / 결과가 의도와 다르게 되거나 문제를 일으킴 / [{{value}}]{{eulReul}} 일부만 실천함 / 상대나 상황이 정말 그것을 필요로 했는지 불확실함. 걸리는 점 없이 [{{value}}]{{eulReul}} 온전히 실천하면 전형적 사례가 되고, 다른 개념 이름이 깔끔하게 붙으면 관련 사례가 되므로 둘 다 피한다.",
+      "mind": "[인물의 마음 — 필수] 인물의 마음이나 상황에 [{{value}}]{{ro}} 볼 수 있는 점과 걸리는 점이 함께 드러나게 하라(예: [{{value}}]답게 하고 싶은 마음 반, 다른 이유 반). 어느 쪽이 옳은지 결말을 내리지 않는다.",
+      "failChecks": [
+        "걸리는 점 없이 [{{value}}]의 모습을 온전히 갖추고 결과도 좋다 → 전형 사례로 읽힌다.",
+        "[{{value}}]{{iGa}} 아닌 다른 뚜렷한 개념(예: {{relatedConcepts}})으로 깔끔하게 설명된다 → 관련 사례로 읽힌다.",
+        "[{{value}}]{{ro}} 볼 만한 점이 하나도 없다 → 반대 사례로 읽힌다.",
+        "걸리는 점이 이야기에 분명히 쓰여 있지 않아, 읽는 사람이 억지로 상상해야만 보인다."
+      ]
+    }
+  },
+  "caseGenerationTemplate": "너는 초등 {{grade}}학년 도덕 수업용 사례를 만드는 작가다. 탐구 덕목은 [{{value}}]{{ida}}.\n\n{{virtueBlock}}\n\n{{typeMap}}\n\n{{typeDefinition}}\n\n{{typeMind}}\n\n{{interestLine}}\n{{easierLine}}\n{{avoidLine}}\n\n{{formatLine}}\n{{safetyRules}}\n\n{{finalCheckIntro}}\n{{checks}}",
+  "situationContexts": {
+    "친구": "또래 관계(놀이, 비밀, 편 나누기, 전학생, 친구 간 갈등 등)",
+    "가족": "가족 역할 관계(집안일 분담, 아픈 가족, 의견 충돌, 용돈 등)",
+    "국가": "사회 구성원 관계(재난, 공공시설, 사회적 약자, 법과 규칙 등)",
+    "국제사회": "국경을 넘는 관계(자연재해 지원, 난민, 기후위기, 개발도상국 등 — 정치적 원인·통계 언급 금지)",
+    "나 자신": "자신과의 관계(스스로 정한 약속, 습관, 실수와 반성, 마음가짐 등)",
+    "학교": "학급·학교생활(모둠 활동, 학급 역할, 학급 규칙, 학교 행사 등)",
+    "자연": "자연·생명과의 관계(동물, 식물, 생태계, 환경 등)"
+  },
+  "situationTemplate": "너는 초등 {{grade}}학년 도덕 수업용 이야기를 만드는 작가다. 탐구 덕목은 [{{value}}]{{ida}}.\n{{virtueBlock}}\n\n이 이야기는 학생이 [{{context}}] 관계 속에서 [{{value}}]의 의미를 넓혀 보도록 돕는다. 이 관계이기 때문에 [{{value}}]{{iGa}} 특별히 중요해지거나 어려워지는 지점을 보여주는 것이 목적이다.\n관계: {{context}} — {{contextDesc}}\n{{scopeLine}}\n\n[이야기 구성] (1) 누가 (2) 이 관계의 어떤 상황에서 (3) 왜 [{{value}}]{{iGa}} 중요한지 또는 어려운지가 드러나게 쓴다.\n[인물의 마음 — 필수] 이 관계에서 [{{value}}]{{eulReul}} 실천하려 할 때 인물이 느끼는 생각이나 망설임을 한 구절 드러내라. 인물이 결국 어떻게 했는지는 써도 되지만, 이야기 안에서 교훈을 말하지 않는다.\n[관계 현실성 — 필수] 그 관계의 사람들이 실제로 결정하거나 겪을 수 있는 일만 쓴다. 예를 들어 반려동물을 키울지는 가족이 정할 일이지 친구끼리 다툴 일이 아니고, 국가의 정책은 어린이 개인이 좌우할 수 없다.\n{{easierLine}}\n{{avoidLine}}\n\n{{formatLine}}\n{{safetyRules}}\n\n{{finalCheckIntro}}\n{{checks}}",
+  "situationChecks": [
+    "이야기에서 [{{context}}] 관계(또는 상황)가 실제로 드러나지 않는다.",
+    "그 관계의 사람들이 실제로 결정하거나 겪을 수 없는, 관계의 권한·역할 밖의 일이다(예: 반려동물을 키울지를 친구끼리 결정함).",
+    "배경만 [{{context}}]에 해당할 뿐, 다른 관계로 바꿔도 이야기가 그대로 성립한다.",
+    "[{{value}}]{{iGa}} 왜 중요한지 또는 왜 어려운지가 드러나지 않는다."
+  ],
+  "contextChecks": {
+    "친구": [],
+    "가족": [],
+    "국가": [
+      "공공장소에서 낯선 사람 한 명을 개인적으로 돕는 이야기에 그치고, 사회 제도·공공 규칙·사회 구성원으로서의 책임이 드러나지 않는다."
+    ],
+    "국제사회": [
+      "한 학생의 개인적인 이야기에 그치고, 서로 다른 나라(또는 나라 사람들) 사이의 관계가 드러나지 않는다.",
+      "분쟁의 정치적 원인이나 통계 수치를 언급한다."
+    ],
+    "나 자신": [
+      "다른 사람을 돕는 이야기가 중심이고, 인물이 자기 자신과 맺은 약속·습관·마음가짐은 드러나지 않는다."
+    ],
+    "학교": [
+      "학급이나 학교라는 공동체의 규칙·역할·활동이 드러나지 않고, 배경만 교실이다."
+    ],
+    "자연": [
+      "동물·식물·자연을 대하는 인물의 태도가 드러나지 않는다."
+    ]
+  },
+  "civicScopeLine": "[국가 맥락 — 필수] 공공장소에서 낯선 사람 한 명을 개인적으로 돕는 이야기로 쓰지 마라 — 배경만 다를 뿐 친구 맥락과 구별되지 않는다. 사회 제도·공공 규칙·사회 구성원으로서의 책임이 드러나는 요소를 하나 이상 넣어라(예: 공공 규칙을 지키는 것이 왜 다른 사람을 위한 일인지 드러나는 상황, 사회적 약자를 위한 시설·제도의 필요성을 느끼는 상황, 어려움을 겪는 지역 주민들을 여럿이 함께 돕는 상황). 인물이 한 명이더라도 그 행동이 '한 개인에 대한 친절'이 아니라 '사회 구성원으로서의 책임'으로 읽혀야 한다.",
+  "internationalScopeLine": "[국제사회 맥락 — 필수] 서로 다른 나라 사이, 또는 서로 다른 나라 사람들 사이에서 [{{value}}]{{iGa}} 드러나는 상황으로 쓴다. 학생 한 명의 개인적인 이야기에 그치지 말고, 우리나라와 다른 나라의 관계나 여러 나라 사람이 함께 겪는 상황으로 구성하라. 분쟁의 정치적 원인이나 통계 수치는 언급하지 않는다.",
+  "counterDirectionA": "방향A: 학생의 뜻(\"{{def2}}\")대로 하는 것이 맞아 보이지만 현실에서는 판단이 어려운 상황. 학생이 \"항상 맞다\"고 생각한 근거가 흔들리는 지점을 겨냥한다. 결말: 인물이 어떻게 할지 정하기 전, 판단이 갈리는 순간에서 끝낸다.",
+  "counterDirectionB": "방향B: 학생의 뜻(\"{{def2}}\")대로 행동했더니 예상하지 못한 문제가 생기는 상황. 학생이 짐작한 예외보다 한 걸음 더 구체적인 지점을 겨냥한다. 결말: 뜻대로 행동한 뒤 생긴 문제까지 보여주고, 그 문제를 해결하거나 평가하지 않고 끝낸다.",
+  "counterTemplate": "너는 초등 {{grade}}학년 도덕 수업용 가상 상황을 만드는 작가다. 탐구 덕목은 [{{value}}]{{ida}}.\n{{virtueBlock}}\n\n학생이 정리한 [{{value}}]의 뜻: \"{{def2}}\"\n학생이 이 뜻에 대해 말한 이유: \"{{reasonText}}\"\n이 가상 상황의 목적은 학생이 자기 뜻을 다시 따져보게 하는 것이지, 정답을 알려주는 것이 아니다.\n\n[만드는 절차] (1) 학생의 뜻에 실제로 쓰인 핵심 조건어·한정어를 찾는다(예: '모든', '차별 없이', '대가 없이'처럼 학생이 실제로 쓴 단어). (2) 그 조건어가 지켜지기 어렵거나, 지켜도 문제가 생기는 지점을 찾는다. (3) 아래 방향에 맞춰 쓴다.\n{{directionDesc}}\n{{counterGradeStyle}}\n[인물의 마음 — 필수] 학생의 뜻대로 하려는 마음과, 그렇게 하기 어렵게 만드는 생각이 함께 드러나게 하라.\n{{avoidLine}}\n\n{{formatLine}}\n{{safetyRules}}\n\n{{finalCheckIntro}}\n{{checks}}",
+  "counterChecks": [
+    "학생의 뜻에 실제로 쓰인 핵심 조건어를 겨냥하지 않고, 어떤 학생의 뜻에도 똑같이 쓸 수 있는 뻔한 상황이다.",
+    "정해진 방향이나 결말 방식과 다르다."
+  ],
+  "q1FollowupTemplate": "학생이 [{{value}}]에 대해 이런 뜻을 정리했다: \"{{def2}}\"\n학생은 방금 \"이 뜻이 모든 상황에서 맞는가?\"라는 질문에 \"{{choiceLabel}}\"라고 답했다.\n\n너는 학생이 정리한 뜻의 실제 문구(핵심 단어)를 직접 언급하면서, 왜 그렇게 생각했는지 구체적으로 캐묻는 소크라테스식 질문을 딱 한 문장만 만들어라. 판정하거나 힌트를 주지 말고, 학생 스스로 자기 생각의 근거를 설명하게 유도하라. 초등 {{grade}}학년이 이해할 수 있는 쉬운 말로 써라.\n\n**반드시 '~요?', '~나요?', '~어요?'처럼 끝나는 존댓말(해요체)로 써라. 반말은 절대 쓰지 마라.** (예: \"그렇게 생각한 이유가 뭐예요?\", \"~인 경우는 없을까요?\")\n\n{{questionStyle}}\n\n질문 문장 하나만 출력하고 다른 설명은 하지 마라.",
+  "q1ProbeTemplate": "학생이 [{{value}}]에 대해 이런 뜻을 정리했다: \"{{def2}}\"\n학생은 다음과 같이 답했다: \"{{answer}}\"\n\n이 답변을 잘 읽고, 아직 설명되지 않은 부분이나 빈틈, 혹은 이어서 캐물을 만한 지점을 하나 찾아서, 그걸 파고드는 후속 질문을 딱 한 문장만 만들어라. 학생이 한 말을 인정하거나 판정하지 말고(\"맞아요\",\"좋은 생각이에요\" 등 절대 금지), 그 답변에서 자연스럽게 이어지는 다음 질문을 던져서 학생이 한 번 더 생각해보게 하라. 초등 {{grade}}학년이 이해할 수 있는 쉬운 말로.\n\n**반드시 '~요?', '~나요?', '~어요?'처럼 끝나는 존댓말(해요체)로 써라. 반말은 절대 쓰지 마라.** (예: \"그럴 때는 어떻게 해야 할까요?\", \"그건 어떤 경우를 말하는 거예요?\")\n\n{{questionStyle}}\n\n질문 문장 하나만 출력하고 다른 설명은 하지 마라.",
+  "questionStyles": {
+    "3": "[3~4학년 질문 방식 — 필수] 초등 {{grade}}학년이 바로 알아듣게, 20자 안팎의 짧은 한 문장으로 묻는다. '조건', '근거', '예외', '보편', '적용'처럼 어려운 낱말은 쓰지 않는다. 뜻 전체를 한꺼번에 묻지 말고, 학생의 뜻이나 답에 쓰인 낱말 하나를 골라 학교·집·놀이터 같은 익숙한 장면 하나에 대어 묻는다.\n(예시 — 실제 학생 답과 무관한 참고용) 학생의 뜻이 '친구를 도와주는 것'일 때: 이유를 물을 때는 \"'도와주는 것'이라고 쓴 까닭이 뭐예요?\", 파고들 때는 \"친구가 숙제를 대신 해 달라고 해도 도와줘야 할까요?\"",
+    "4": "[3~4학년 질문 방식 — 필수] 초등 {{grade}}학년이 바로 알아듣게, 20자 안팎의 짧은 한 문장으로 묻는다. '조건', '근거', '예외', '보편', '적용'처럼 어려운 낱말은 쓰지 않는다. 뜻 전체를 한꺼번에 묻지 말고, 학생의 뜻이나 답에 쓰인 낱말 하나를 골라 학교·집·놀이터 같은 익숙한 장면 하나에 대어 묻는다.\n(예시 — 실제 학생 답과 무관한 참고용) 학생의 뜻이 '친구를 도와주는 것'일 때: 이유를 물을 때는 \"'도와주는 것'이라고 쓴 까닭이 뭐예요?\", 파고들 때는 \"친구가 숙제를 대신 해 달라고 해도 도와줘야 할까요?\""
+  },
+  "counterGradeStyles": {
+    "3": "[3~4학년 가상 상황 — 필수] 학생의 뜻에 쓰인 낱말 하나만 겨냥한다. 학교·집·놀이터처럼 초등 {{grade}}학년이 매일 겪는 장면 하나로 쓰고, 등장인물은 두 명 이내로 한다. 고민거리는 한 가지만 두고, 여러 문제가 겹치게 만들지 않는다.",
+    "4": "[3~4학년 가상 상황 — 필수] 학생의 뜻에 쓰인 낱말 하나만 겨냥한다. 학교·집·놀이터처럼 초등 {{grade}}학년이 매일 겪는 장면 하나로 쓰고, 등장인물은 두 명 이내로 한다. 고민거리는 한 가지만 두고, 여러 문제가 겹치게 만들지 않는다."
+  },
+  "judgeTemplate": "너는 초등 {{grade}}학년 도덕 수업 자료를 검수하는 교사다. 아래 이야기가 수업 목적에 맞는지 판정하라.\n탐구 덕목: [{{value}}]\n{{virtueBlock}}\n이야기의 용도: {{kindLabel}}\n\n[이야기]\n{{story}}\n\n[실패 조건 — 모든 이야기 공통]\n{{common}}\n\n[실패 조건 — 이 용도]\n{{criteria}}\n\n[판정 원칙] 위 실패 조건 중 하나에 분명히 해당할 때만 '실패'로 판정하라. 문체·표현 취향·사소한 어색함은 실패 사유가 아니다. 확신이 서지 않으면 '통과'로 판정하라.\n\n[출력 형식 — 반드시 지킬 것] 아래 두 형식 중 하나만 출력하고, 다른 말은 쓰지 마라.\n판정: 통과\n또는\n판정: 실패\n문제: (어떤 실패 조건에 어떻게 해당하는지 한 문장)",
+  "judgeKindLabels": {
+    "model": "전형적 사례 — 누가 봐도 [{{value}}]{{iRago}} 동의할 수 있어야 한다.",
+    "contrary": "반대 사례 — 누가 봐도 [{{value}}]{{iGa}} 아니라고 동의할 수 있어야 한다.",
+    "related": "관련 사례 — [{{value}}]처럼 보이지만 실제로는 이름이 분명한 다른 개념의 사례여야 한다.",
+    "borderline": "경계 사례 — [{{value}}]인지 아닌지 판단이 갈려야 한다. 원래 애매해야 하므로 애매함 자체는 실패 사유가 아니다.",
+    "situation": "관계 속 이야기 — [{{context}}] 관계이기 때문에 [{{value}}]{{iGa}} 중요해지거나 어려워지는 지점을 보여줘야 한다.",
+    "counter": "가상 상황 — 학생이 정리한 [{{value}}]의 뜻(\"{{def2}}\")을 다시 따져보게 하는 상황이어야 한다. {{directionDesc}}"
+  },
+  "retryFeedbackTemplate": "\n\n[직전 초안의 문제 — 반드시 고칠 것] 직전에 쓴 초안이 검수에서 다음 이유로 탈락했다: {{reason}}\n탈락한 초안: \"{{draft}}\"\n이 문제를 고친, 완전히 새로운 이야기를 써라. 탈락한 초안의 문장이나 설정을 재사용하지 마라.",
+  "gradeStyles": {
+    "3": "[학년 수준] 초등 3학년이 읽는다. 문장은 짧게, 한 문장에 한 가지 일만 쓰고, 어려운 한자어나 추상적인 낱말은 쓰지 않는다.",
+    "4": "[학년 수준] 초등 4학년이 읽는다. 문장은 짧게, 한 문장에 한 가지 일만 쓰고, 어려운 한자어나 추상적인 낱말은 쓰지 않는다."
+  },
+  "virtueBlockTemplate": "[덕목 정보 — 초등 도덕 교사용 지도서 기준] 이야기를 만들고 판단하는 근거로만 쓰고, 정의 문구를 이야기에 그대로 옮기지 않는다.\n덕목: [{{value}}] ({{grade}}학년 {{unit}})\n정의(원문): {{definition}}\n정의적 속성(원문 발췌):\n{{attributes}}\n{{guidance}}\n{{notes}}\n{{scope}}",
+  "genericVirtueBlock": "[덕목 정보] [{{value}}]{{eunNeun}} 등록된 지도서 정의가 없는 덕목이다. 초등 도덕 교육에서 일반적으로 쓰는 뜻에서 정의적 속성을 스스로 정리해 판단한다.",
+  "defaultRelatedConcepts": "동정심, 의무감, 우정, 규칙 준수",
+  "virtueProfiles": [
+    {
+      "name": "자아 존중",
+      "aliases": [
+        "자아존중",
+        "자존감"
+      ],
+      "grade": "3",
+      "unit": "1단원 나를 찾아 떠나는 여행",
+      "definition": "자신의 품위를 스스로 높이고 긍지를 느끼며 자신감을 갖는 긍정적이고 적극적인 자아 개념",
+      "guidance": "",
+      "attributes": [
+        "자신의 품위를 스스로 높이고",
+        "긍지를 느끼며",
+        "자신감을 갖는",
+        "긍정적이고 적극적인 자아 개념"
+      ],
+      "relatedConcepts": [
+        "자만",
+        "자주",
+        "용기"
+      ],
+      "contexts": [
+        "나 자신",
+        "친구",
+        "가족",
+        "학교"
+      ],
+      "scope": "",
+      "notes": "",
+      "extraFailChecks": {}
+    },
+    {
+      "name": "성실",
+      "aliases": [],
+      "grade": "3",
+      "unit": "2단원 성실하게 사는 삶",
+      "definition": "말한 바를 반드시 이루도록 정성을 다하는 것으로, 하늘의 도인 성(誠)을 온전히 실천하는 사람의 도(道)이자 모든 덕목을 뒷받침하는 덕",
+      "guidance": "",
+      "attributes": [
+        "말한 바를 반드시 이루도록",
+        "정성을 다하는 것"
+      ],
+      "relatedConcepts": [
+        "책임",
+        "근면",
+        "고집"
+      ],
+      "contexts": [
+        "나 자신",
+        "가족",
+        "학교",
+        "친구"
+      ],
+      "scope": "",
+      "notes": "원문 정의 뒷부분(하늘의 도인 성(誠)…)은 덕목의 의미를 설명하는 배경이다. 사례는 앞부분의 속성(말한 바를 반드시 이루도록 정성을 다함)이 드러나는 생활 장면으로 만든다.",
+      "extraFailChecks": {}
+    },
+    {
+      "name": "효",
+      "aliases": [
+        "효도"
+      ],
+      "grade": "3",
+      "unit": "3단원 함께하는 우리 가족",
+      "definition": "부모를 공경하는 마음을 갖고 이를 실천하는 것",
+      "guidance": "가족의 행복을 위해 가족 구성원 중 한 사람만 희생하는 것은 바람직하지 못하다는 것과 효의 실천이 무조건적인 복종과 순종의 의미는 아니라는 것을 안내하도록 한다.",
+      "attributes": [
+        "부모를 공경하는 마음을 갖고",
+        "이를 실천하는 것"
+      ],
+      "relatedConcepts": [
+        "무조건적인 복종과 순종",
+        "우애",
+        "예절",
+        "감사"
+      ],
+      "contexts": [
+        {
+          "name": "부모님과 함께하는 일상",
+          "desc": "집에서 부모님과 함께 지내는 일상(집안일, 대화, 부모님의 수고와 걱정 등)"
+        },
+        {
+          "name": "부모님이 힘드실 때",
+          "desc": "부모님이 아프시거나 바쁘시거나 지치신 상황"
+        },
+        {
+          "name": "떨어져 지내는 부모님",
+          "desc": "일이나 거리 때문에 부모님과 떨어져 지내는 상황(연락, 기다림, 마음 표현 등)"
+        },
+        {
+          "name": "의견이 다를 때",
+          "desc": "부모님과 내 생각이 다른 상황(공경하는 마음을 지키며 생각을 말하기 등)"
+        }
+      ],
+      "scope": "",
+      "notes": "지도상 유의점에 따라, 무조건 시키는 대로 따르는 모습(무조건적인 복종과 순종)이나 가족 중 한 사람만 희생하는 모습을 바람직한 효로 그리지 않는다. 이 두 모습은 관련 사례(무조건적인 복종과 순종)나 경계 사례(공경하는 마음은 있지만 한 사람만 희생함)의 소재로 쓸 수 있다.",
+      "extraFailChecks": {
+        "model": [
+          "무조건 시키는 대로 따르는 모습(무조건적인 복종과 순종)을 바람직한 효로 그린다.",
+          "가족의 행복을 위해 가족 중 한 사람만 희생하는 모습을 바람직한 효로 그린다."
+        ],
+        "situation": [
+          "무조건 시키는 대로 따르는 모습(무조건적인 복종과 순종)을 바람직한 효로 그린다.",
+          "가족의 행복을 위해 가족 중 한 사람만 희생하는 모습을 바람직한 효로 그린다."
+        ]
+      }
+    },
+    {
+      "name": "우애",
+      "aliases": [],
+      "grade": "3",
+      "unit": "3단원 함께하는 우리 가족",
+      "definition": "형제자매 간의 친애감을 바탕으로 서로 화합하는 것",
+      "guidance": "",
+      "attributes": [
+        "형제자매 간의 친애감을 바탕으로",
+        "서로 화합하는 것"
+      ],
+      "relatedConcepts": [
+        "우정",
+        "효",
+        "양보"
+      ],
+      "contexts": [
+        {
+          "name": "형·오빠·누나·언니",
+          "desc": "손위 형제자매와 나 사이(물건·차례 다툼, 도움받기, 비교되는 마음 등)"
+        },
+        {
+          "name": "동생",
+          "desc": "손아래 동생과 나 사이(돌봐 주기, 양보, 다툼과 화해 등)"
+        },
+        {
+          "name": "사촌 형제자매",
+          "desc": "명절이나 가족 모임에서 만나는 사촌 형제자매와 나 사이"
+        }
+      ],
+      "scope": "",
+      "notes": "",
+      "extraFailChecks": {}
+    },
+    {
+      "name": "공정",
+      "aliases": [],
+      "grade": "3",
+      "unit": "6단원 함께 가는 공정의 길",
+      "definition": "개인과 개인 사이의 관계와 함께 속해 있는 사회에서 균형 있는 대우를 받도록 하는 것",
+      "guidance": "",
+      "attributes": [
+        "개인과 개인 사이의 관계와 함께 속해 있는 사회에서",
+        "균형 있는 대우를 받도록 하는 것"
+      ],
+      "relatedConcepts": [
+        "정의",
+        "똑같이 나누기(평등)",
+        "양보"
+      ],
+      "contexts": [
+        "친구",
+        "가족",
+        "학교",
+        "국가"
+      ],
+      "scope": "",
+      "notes": "",
+      "extraFailChecks": {}
+    },
+    {
+      "name": "생명 존중",
+      "aliases": [
+        "생명존중"
+      ],
+      "grade": "3",
+      "unit": "7단원 생명을 소중히 여기는 우리",
+      "definition": "하나밖에 없는 생명의 소중함을 알고 생활 속에서 생명 존중을 실천하려는 태도와 의지",
+      "guidance": "",
+      "attributes": [
+        "하나밖에 없는 생명의 소중함을 알고",
+        "생활 속에서 생명 존중을 실천하려는 태도와 의지"
+      ],
+      "relatedConcepts": [
+        "동정심",
+        "환경 보호",
+        "안전 규칙 지키기"
+      ],
+      "contexts": [
+        "나 자신",
+        "친구",
+        "가족",
+        "자연"
+      ],
+      "scope": "",
+      "notes": "생명 존중은 사람뿐 아니라 동물·식물의 생명, 그리고 자기 자신의 생명과 건강도 대상이 된다. 죽음·다침·학대 장면은 묘사하지 않는다.",
+      "extraFailChecks": {}
+    },
+    {
+      "name": "정직",
+      "aliases": [],
+      "grade": "4",
+      "unit": "1단원 바르고 곧은 길",
+      "definition": "말과 행동에 거짓이 없음을 의미하며, 개인의 인격 성장과 행복은 물론 사회의 건강한 운영과 질서를 위해 필수적인 덕목",
+      "guidance": "",
+      "attributes": [
+        "말과 행동에 거짓이 없음"
+      ],
+      "relatedConcepts": [
+        "용기",
+        "책임",
+        "약속 지키기"
+      ],
+      "contexts": [
+        "나 자신",
+        "친구",
+        "가족",
+        "학교"
+      ],
+      "scope": "",
+      "notes": "원문 정의 뒷부분(개인의 인격 성장과…)은 정직이 중요한 이유를 설명하는 배경이다. 사례는 앞부분의 속성(말과 행동에 거짓이 없음)이 드러나는 장면으로 만든다.",
+      "extraFailChecks": {}
+    },
+    {
+      "name": "도덕",
+      "aliases": [],
+      "grade": "4",
+      "unit": "2단원 도덕적인 나",
+      "definition": "‘도(道)’는 인간의 근원인 하늘을 근거로 하는 인간 행동의 원리로, 시공을 초월한 자연의 기본 원리인 형이상학적 보편 원리이다. ‘덕(德)’은 인간 행위에 나타난 도(道)의 구현, 또는 행위의 도덕적 원칙이나 사물의 특성을 가리키는 범주로 구체적으로 드러나는 형이학적 존재를 가리킨다.",
+      "guidance": "",
+      "attributes": [
+        "‘도(道)’는 인간의 근원인 하늘을 근거로 하는 인간 행동의 원리",
+        "‘덕(德)’은 인간 행위에 나타난 도(道)의 구현"
+      ],
+      "relatedConcepts": [
+        "규칙 지키기(혼날까 봐)",
+        "예절",
+        "착한 척"
+      ],
+      "contexts": [
+        "나 자신",
+        "친구",
+        "가족",
+        "학교"
+      ],
+      "scope": "",
+      "notes": "원문 정의가 추상적이므로, 사례는 인물이 마땅히 따라야 할 행동의 원리(도)를 알고 그것을 자기 행위로 드러내는(덕) 생활 장면으로 구체화한다. 정의의 철학적 표현은 이야기에 쓰지 않는다.",
+      "extraFailChecks": {}
+    },
+    {
+      "name": "배려",
+      "aliases": [],
+      "grade": "4",
+      "unit": "3단원 배려하는 우리",
+      "definition": "다른 사람을 돕거나 보살피려고 마음을 쓰는 것으로, 타인에 대한 관심과 공감을 기반으로 나와 타인, 우리의 삶을 개선하는 관계적 가치",
+      "guidance": "",
+      "attributes": [
+        "다른 사람을 돕거나 보살피려고 마음을 쓰는 것",
+        "타인에 대한 관심과 공감을 기반으로",
+        "나와 타인, 우리의 삶을 개선하는"
+      ],
+      "relatedConcepts": [
+        "우정",
+        "봉사",
+        "동정심"
+      ],
+      "contexts": [
+        "친구",
+        "가족",
+        "학교",
+        "국가"
+      ],
+      "scope": "",
+      "notes": "",
+      "extraFailChecks": {}
+    },
+    {
+      "name": "우정",
+      "aliases": [],
+      "grade": "4",
+      "unit": "3단원 배려하는 우리",
+      "definition": "개인과 개인이 친밀함으로 정성의 감정을 나누는 것",
+      "guidance": "",
+      "attributes": [
+        "개인과 개인이 친밀함으로",
+        "정성의 감정을 나누는 것"
+      ],
+      "relatedConcepts": [
+        "배려",
+        "잘못을 감싸 주는 의리",
+        "우애"
+      ],
+      "contexts": [
+        {
+          "name": "단짝 친구",
+          "desc": "오래 가깝게 지낸 친구 사이(비밀, 서운함, 응원 등)"
+        },
+        {
+          "name": "새로 사귄 친구",
+          "desc": "전학 온 친구나 새 학년에 처음 만난 친구 사이"
+        },
+        {
+          "name": "다투었던 친구",
+          "desc": "다툼이나 오해가 생긴 친구 사이(사과, 화해, 서운함 등)"
+        },
+        {
+          "name": "멀리 있는 친구",
+          "desc": "이사나 전학으로 떨어져 지내는 친구 사이"
+        }
+      ],
+      "scope": "",
+      "notes": "",
+      "extraFailChecks": {}
+    },
+    {
+      "name": "자주",
+      "aliases": [],
+      "grade": "5",
+      "unit": "1단원 내 삶의 주인이 되는 나",
+      "definition": "스스로의 주인이 되는 마음으로 스스로 결정하고 실천하는 것으로, 스스로 판단하고 행동하며 자신의 삶에 책임을 지는 가치",
+      "guidance": "",
+      "attributes": [
+        "스스로의 주인이 되는 마음으로",
+        "스스로 결정하고 실천하는 것",
+        "자신의 삶에 책임을 지는"
+      ],
+      "relatedConcepts": [
+        "고집",
+        "자율",
+        "혼자 다 하기"
+      ],
+      "contexts": [
+        "나 자신",
+        "친구",
+        "가족",
+        "학교"
+      ],
+      "scope": "",
+      "notes": "",
+      "extraFailChecks": {}
+    },
+    {
+      "name": "성찰",
+      "aliases": [],
+      "grade": "5",
+      "unit": "2단원 반성과 성찰로 성장하는 나",
+      "definition": "타율이 아닌 자율적 의지에 따라 도덕적인 삶을 지향해 가는 과정",
+      "guidance": "",
+      "attributes": [
+        "타율이 아닌 자율적 의지에 따라",
+        "도덕적인 삶을 지향해 가는 과정"
+      ],
+      "relatedConcepts": [
+        "반성",
+        "후회",
+        "자책"
+      ],
+      "contexts": [
+        "나 자신",
+        "친구",
+        "가족",
+        "학교"
+      ],
+      "scope": "",
+      "notes": "",
+      "extraFailChecks": {}
+    },
+    {
+      "name": "자율",
+      "aliases": [],
+      "grade": "5",
+      "unit": "2단원 반성과 성찰로 성장하는 나",
+      "definition": "자신의 욕망이나 남의 명령에 의존하지 않고, 스스로의 의지로 객관적인 도덕 법칙을 세워 이를 따르는 것",
+      "guidance": "",
+      "attributes": [
+        "자신의 욕망이나 남의 명령에 의존하지 않고",
+        "스스로의 의지로 객관적인 도덕 법칙을 세워 이를 따르는 것"
+      ],
+      "relatedConcepts": [
+        "자주",
+        "자유",
+        "성찰"
+      ],
+      "contexts": [
+        "나 자신",
+        "친구",
+        "가족",
+        "학교"
+      ],
+      "scope": "",
+      "notes": "",
+      "extraFailChecks": {}
+    },
+    {
+      "name": "봉사",
+      "aliases": [],
+      "grade": "5",
+      "unit": "3단원 함께 사는 세상, 봉사하는 우리",
+      "definition": "타인이 처한 상황과 환경에 대한 주의 깊은 관심을 바탕으로 타인과 이웃, 사회를 위해 자발적으로 행동하는 도덕적 실천",
+      "guidance": "",
+      "attributes": [
+        "타인이 처한 상황과 환경에 대한 주의 깊은 관심을 바탕으로",
+        "타인과 이웃, 사회를 위해",
+        "자발적으로 행동하는 도덕적 실천"
+      ],
+      "relatedConcepts": [
+        "배려",
+        "기부",
+        "협동"
+      ],
+      "contexts": [
+        "학교",
+        "국가",
+        "국제사회",
+        "자연"
+      ],
+      "scope": "",
+      "notes": "",
+      "extraFailChecks": {}
+    },
+    {
+      "name": "인권",
+      "aliases": [],
+      "grade": "5",
+      "unit": "5단원 모두에게 인권을",
+      "definition": "모든 인간이 가지고 있는 자유와 권리로, 태어나면서부터 인종이나 지위에 상관없이 누구에게나 동등하게 주어지는 보편적 권리",
+      "guidance": "",
+      "attributes": [
+        "모든 인간이 가지고 있는 자유와 권리",
+        "태어나면서부터",
+        "인종이나 지위에 상관없이 누구에게나 동등하게 주어지는 보편적 권리"
+      ],
+      "relatedConcepts": [
+        "베풂(배려)",
+        "특권",
+        "욕구(갖고 싶은 것)"
+      ],
+      "contexts": [
+        "친구",
+        "학교",
+        "국가",
+        "국제사회"
+      ],
+      "scope": "",
+      "notes": "차별 장면은 짧게만 쓰고, 특정 집단을 비하하는 말을 그대로 옮기지 않는다.",
+      "extraFailChecks": {}
+    },
+    {
+      "name": "정의",
+      "aliases": [],
+      "grade": "5",
+      "unit": "6단원 공동체를 정의롭게!",
+      "definition": "전통적으로 '각자에게 그의 몫을'이라는 명제로 대표되며, 법과 질서를 지키고 자신의 이익과 더불어 다른 사람의 이익까지 생각하는 가역적 사고를 포함하는 공동체 유지 덕목",
+      "guidance": "",
+      "attributes": [
+        "'각자에게 그의 몫을'",
+        "법과 질서를 지키고",
+        "자신의 이익과 더불어 다른 사람의 이익까지 생각하는 가역적 사고"
+      ],
+      "relatedConcepts": [
+        "공정",
+        "규칙 지키기",
+        "되갚기(복수)"
+      ],
+      "contexts": [
+        "친구",
+        "학교",
+        "국가",
+        "국제사회"
+      ],
+      "scope": "",
+      "notes": "",
+      "extraFailChecks": {}
+    },
+    {
+      "name": "다름 존중",
+      "aliases": [
+        "관용",
+        "다름존중"
+      ],
+      "grade": "6",
+      "unit": "2단원 다름을 존중하는 우리",
+      "definition": "'관용'은 서로 다른 생각, 신념, 행동을 너그럽게 받아들이고 그 권리를 인정하는 것으로, 편견을 극복하고 다양한 사람과 조화롭게 살아가는 덕목",
+      "guidance": "",
+      "attributes": [
+        "서로 다른 생각, 신념, 행동을 너그럽게 받아들이고",
+        "그 권리를 인정하는 것",
+        "편견을 극복하고",
+        "다양한 사람과 조화롭게 살아가는"
+      ],
+      "relatedConcepts": [
+        "무관심",
+        "배려",
+        "참기"
+      ],
+      "contexts": [
+        "친구",
+        "학교",
+        "국가",
+        "국제사회"
+      ],
+      "scope": "",
+      "notes": "지도서에서 이 덕목은 '관용'으로 정의된다.",
+      "extraFailChecks": {}
+    },
+    {
+      "name": "통일 의지",
+      "aliases": [
+        "통일의지"
+      ],
+      "grade": "6",
+      "unit": "5단원 통일 한반도의 어느 날",
+      "definition": "통일 과정과 통일 이후 사회에서 마주할 수 있는 다양한 문제를 탐구하고 이를 해결하는 방안을 모색함으로써 평화롭고 바람직한 통일을 추구하는 태도와 의지",
+      "guidance": "",
+      "attributes": [
+        "통일 과정과 통일 이후 사회에서 마주할 수 있는 다양한 문제를 탐구하고",
+        "이를 해결하는 방안을 모색함으로써",
+        "평화롭고 바람직한 통일을 추구하는 태도와 의지"
+      ],
+      "relatedConcepts": [
+        "애국심",
+        "동정심",
+        "배려"
+      ],
+      "contexts": [
+        "친구",
+        "가족",
+        "국가",
+        "국제사회"
+      ],
+      "scope": "",
+      "notes": "특정 정당·정부·정책에 대한 평가나 정치적 주장을 쓰지 않는다. 북한 주민을 적대하거나 비하하지 않는다. 군사 충돌 장면은 쓰지 않는다.",
+      "extraFailChecks": {}
+    },
+    {
+      "name": "인류애",
+      "aliases": [],
+      "grade": "6",
+      "unit": "6단원 사랑, 우리를 넘어 세계로",
+      "definition": "다른 나라 사람들이 처한 여러 가지 상황을 종합적으로 이해하고 해결 방안을 탐구하며, 국경과 인종을 넘어 지구촌 타자의 고통에 공감하고 인류를 사랑하는 태도",
+      "guidance": "",
+      "attributes": [
+        "다른 나라 사람들이 처한 여러 가지 상황을 종합적으로 이해하고",
+        "해결 방안을 탐구하며",
+        "국경과 인종을 넘어",
+        "지구촌 타자의 고통에 공감하고",
+        "인류를 사랑하는 태도"
+      ],
+      "relatedConcepts": [
+        "애국심",
+        "배려",
+        "동정심"
+      ],
+      "contexts": [
+        "친구",
+        "가족",
+        "국가",
+        "국제사회"
+      ],
+      "scope": "[인류애 사례의 범위 — 필수] 지도서 정의상 인류애는 국경과 인종을 넘어 지구촌 타자를 향한다. 전형적·반대·경계 사례는 다른 나라 사람들(또는 다른 나라에서 온 사람들)과 관련된 상황이어야 한다. 관련 사례는 우리 주변 사람을 향한 다른 개념이어도 된다. 해외여행 중 외국인을 돕는 장면만 반복하지 말고, 우리 동네의 외국인 이웃, 다른 나라에서 온 친구, 다른 나라 소식을 접했을 때의 반응, 국제 교류 활동 등 다양한 장면을 활용하라.",
+      "notes": "",
+      "extraFailChecks": {}
+    }
+  ]
+};
+let PROMPTS = DEFAULT_PROMPTS;
+async function loadPrompts() {
+  try {
+    const res = await fetch('./prompts.json', { cache: 'no-store' });
+    if (res.ok) PROMPTS = await res.json();
+  } catch (e) { /* prompts.json이 없으면(예: 이 미리보기 화면) 기본값을 그대로 쓴다 */ }
+}
+
+function fillRaw(str, vars) {
+  return str.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in vars ? vars[k] : ''));
+}
+// 모든 문구에서 공통으로 쓰는 값(학년, 덕목 정보 등)은 따로 넘기지 않아도 자동으로 채운다.
+function fillTemplate(str, vars = {}) {
+  const g = templateGlobals();
+  return str.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in vars ? vars[k] : (k in g ? g[k] : '')));
+}
+
+// ---------- 덕목 프로필 (초등 도덕 교사용 지도서 기준) ----------
+function normalizeVirtue(t) {
+  return (t || '').replace(/[\s()（）·.,!?~'"]/g, '');
+}
+function findProfile(input) {
+  const n = normalizeVirtue(input);
+  if (!n) return null;
+  return (PROMPTS.virtueProfiles || []).find(p =>
+    normalizeVirtue(p.name) === n || (p.aliases || []).some(a => normalizeVirtue(a) === n)) || null;
+}
+function currentProfile() {
+  return state.value ? findProfile(state.value) : null;
+}
+// 수업 설정: 교사가 방 화면에서 고른 덕목(과 직접 입력한 덕목의 학년). 학생은 공유 링크(?v=덕목&g=학년)로 받는다.
+// 대화 초기화·되돌리기와 무관하게 유지되어야 하므로 state 밖에 둔다.
+// 등록된 덕목은 지도서(교과서)의 학년으로 고정되고, grade는 '목록에 없는 덕목 직접 입력'일 때만 쓴다.
+const LESSON = { virtue: null, grade: null };
+
+// 지금 수업에 실제로 적용되는 학년. 모르면 null.
+function effectiveGrade() {
+  const p = LESSON.virtue ? findProfile(LESSON.virtue) : currentProfile();
+  return p ? p.grade : (LESSON.grade || null);
+}
+// 3~4학년 수업은 활동3의 소크라테스식 질문을 1개만 한다(두 번째 파고드는 질문 생략).
+function skipProbeActive() {
+  return ['3', '4'].includes(effectiveGrade());
+}
+
+function templateGlobals() {
+  const p = currentProfile();
+  const grade = p ? p.grade : (LESSON.grade || '5~6');
+  const v = state.value || '';
+  const b = hasBatchim(v);
+  const lastCode = v ? v.trim().slice(-1).charCodeAt(0) - 0xAC00 : -1;
+  const rieul = lastCode >= 0 && lastCode % 28 === 8; // ㄹ받침 뒤에는 '로'
+  const g = {
+    grade,
+    // [덕목] 뒤에 붙는 조사(받침 유무에 맞게)
+    iGa: b ? '이' : '가', eunNeun: b ? '은' : '는', eulReul: b ? '을' : '를', waGwa: b ? '과' : '와',
+    ro: b && !rieul ? '으로' : '로', ida: b ? '이다' : '다', iRago: b ? '이라고' : '라고',
+    gradeStyle: (PROMPTS.gradeStyles || {})[grade] || '',
+    questionStyle: fillRaw((PROMPTS.questionStyles || {})[grade] || '', { grade }),
+    counterGradeStyle: fillRaw((PROMPTS.counterGradeStyles || {})[grade] || '', { grade }),
+    relatedConcepts: p && p.relatedConcepts && p.relatedConcepts.length ? p.relatedConcepts.join(', ') : PROMPTS.defaultRelatedConcepts,
+  };
+  g.virtueBlock = p
+    ? fillRaw(PROMPTS.virtueBlockTemplate, {
+        value: p.name, grade: p.grade, unit: p.unit, // 덕목 정보의 학년은 지도서(교과서)상의 학년 definition: p.definition,
+        attributes: p.attributes.map(a => '- ' + a).join('\n'),
+        guidance: p.guidance ? `[지도상 유의점(지도서 원문)] ${p.guidance}` : '',
+        notes: p.notes || '', scope: p.scope || '',
+      }).replace(/\n+$/, '')
+    : fillRaw(PROMPTS.genericVirtueBlock, { value: state.value });
+  return g;
+}
+
+// 활동2 관계 선택지: 덕목 프로필에 정해진 것을 쓰고, 없으면 기본 4개를 쓴다.
+const DEFAULT_CONTEXTS = ['친구', '가족', '국가', '국제사회'];
+const CONTEXT_EMOJI = { '나 자신': '🙋', '친구': '👫', '가족': '👨‍👩‍👧', '학교': '🏫', '국가': '🏘️', '국제사회': '🌍', '자연': '🌱' };
+function contextList() {
+  const p = currentProfile();
+  const list = (p && p.contexts && p.contexts.length) ? p.contexts : DEFAULT_CONTEXTS;
+  return list.map(c => typeof c === 'string'
+    ? { name: c, desc: PROMPTS.situationContexts[c] || c }
+    : { name: c.name, desc: c.desc || c.name });
+}
+function contextInfo(name) {
+  return contextList().find(c => c.name === name) || { name, desc: PROMPTS.situationContexts[name] || name };
+}
+// 공용 관계(친구·가족 등)는 "○○ 관계 속", 덕목 전용 관계·상황(예: 효의 '부모님이 힘드실 때')은 이름 그대로 쓴다.
+function ctxPhrase(name) {
+  return PROMPTS.situationContexts[name] ? `${name} 관계 속` : name;
+}
+function contextChipLabel(name) {
+  return `${CONTEXT_EMOJI[name] || '👥'} ${name}`;
+}
+
+const CASE_TYPE_KEYS = ['model', 'contrary', 'related', 'borderline'];
+const CASE_TYPES = CASE_TYPE_KEYS.map(key => ({
+  key,
+  ask: (v) => {
+    const b = hasBatchim(v);
+    return fillTemplate(PROMPTS.caseTypes[key].askTemplate, {
+      value: v,
+      waGwa: b ? '과' : '와',
+      iRago: b ? '이라고' : '라고',
+    });
+  },
+}));
+
+// 한글 단어의 받침 유무를 판단해 조사를 자동으로 고른다(을/를, 이/가, 와/과 등).
+function hasBatchim(word) {
+  if (!word) return false;
+  const ch = word.trim().slice(-1);
+  const code = ch.charCodeAt(0);
+  if (code < 0xAC00 || code > 0xD7A3) return false; // 한글 음절이 아니면 받침 없음으로 취급
+  return (code - 0xAC00) % 28 !== 0;
+}
+// ---------- 학생 입력 확인(개인정보·욕설·위기 신호) ----------
+// 학생이 쓴 글은 화면(기기) 안에서 먼저 확인한다. 걸리면 보내지 않고, 고쳐 쓸 수 있게 입력창에 그대로 둔다.
+// 이름처럼 자동으로 확실히 가려내기 어려운 개인정보는 시작할 때의 안내로 대신한다.
+const PRIVACY_PATTERNS = [
+  { name: '전화번호', re: /(?:01[016789]|0\d{1,2})[-.\s]?\d{3,4}[-.\s]?\d{4}/ },
+  { name: '이메일', re: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/ },
+  { name: '주민등록번호', re: /\d{6}\s?[-–]\s?[1-8]\d{6}/ },
+  { name: '긴 숫자(계좌번호 등)', re: /\d[\d\s-]{8,}\d/ },
+  { name: '주소', re: /\d+\s*동\s*\d+\s*호/ },
+  { name: '주소', re: /[가-힣]+(?:시|도)\s*[가-힣]+(?:구|군)\s*[가-힣]+(?:동|읍|면)/ },
+  { name: '주소', re: /[가-힣\d]{2,}(?:로|길)\s?\d{1,4}(?:-\d{1,4})?(?![\d번개명살학년시분일층회월원등])/ },
+  { name: '학년·반·번호', re: /\d\s*학년\s*\d+\s*반\s*\d+\s*번/ },
+  { name: '학교 이름', re: /(?<![가-힣])(?!다른|우리|어느|같은|이웃|옆|새)[가-힣]{2,}초(?:등학교)?\s*\d\s*학년/ },
+  { name: '이름', re: /(?:내|제|나의|저의|우리\s*[가-힣]{1,3}의?)\s*이름은\s*[가-힣]{2,4}/ },
+  { name: 'SNS 아이디', re: /(?:^|\s)@[A-Za-z0-9_.]{3,}/ },
+];
+// 욕설·비속어(띄어쓰기·기호를 넣어 피하는 경우까지 보려고 한글·자모만 남겨서 비교)
+const PROFANITY = ['씨발', '시발', '씨팔', '씨바', 'ㅅㅂ', 'ㅆㅂ', '병신', '븅신', 'ㅂㅅ', '좆', 'ㅈ같', '존나', '졸라', 'ㅈㄴ',
+  '개새끼', '개새', '미친놈', '미친년', '미친새끼', '지랄', 'ㅈㄹ', '닥쳐', '꺼져', '엿먹', '느금', '니애미', '니미', '섹스', '야동'];
+const PROFANITY_ALLOW = ['시발점', '시발역']; // 욕설과 글자가 겹치는 보통 낱말
+// 도움이 필요할 수 있는 신호(자해·자살·학대)
+const CRISIS_PATTERNS = [/죽고\s*싶/, /자살/, /자해/, /죽어\s*버리/, /사라지고\s*싶/, /살기\s*싫/, /손목을?\s*긋/, /목을?\s*매/,
+  /(?:엄마|아빠|부모님?|선생님|어른)[가-힣\s]{0,6}(?:때려|때린|맞았|맞아서|맞고)/];
+
+function screenStudentInput(text) {
+  const t = String(text || '');
+  if (CRISIS_PATTERNS.some(re => re.test(t))) {
+    return { ok: false, kind: 'crisis',
+      message: '💛 마음이 많이 힘든 것 같아요. 이런 이야기는 AI보다 선생님이나 믿을 수 있는 어른에게 꼭 말해 주세요. 지금 선생님께 손을 들어 알려도 괜찮아요. (청소년 상담 전화 1388도 언제든 도와줄 수 있어요.)\n\n수업 활동을 이어 가려면 입력한 글을 고쳐서 다시 보내 주세요.' };
+  }
+  const squeezed = t.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣ]/g, '');
+  const cleaned = PROFANITY_ALLOW.reduce((s, w) => s.split(w).join(''), squeezed);
+  if (PROFANITY.some(w => cleaned.includes(w))) {
+    return { ok: false, kind: 'profanity',
+      message: '🙅 바르지 않은 말이 들어 있어요. 고운 말로 고쳐서 다시 보내 주세요.' };
+  }
+  const hit = PRIVACY_PATTERNS.find(p => p.re.test(t));
+  if (hit) {
+    return { ok: false, kind: 'privacy', what: hit.name,
+      message: `🔒 ${hit.name}처럼 보이는 개인정보가 있어요. 개인정보는 빼고 다시 써 주세요.` };
+  }
+  return { ok: true };
+}
+
+// 입력창의 보내기 직전에 쓰는 공통 확인. 걸리면 안내만 보여주고 false를 돌려준다(글은 입력창에 남아 있음).
+let lastScreenWarnAt = 0;
+function passesInputScreen(v) {
+  const r = screenStudentInput(v);
+  if (r.ok) return true;
+  const now = Date.now();
+  if (now - lastScreenWarnAt > 400) pushAI(r.message); // 연속으로 눌러도 안내가 여러 번 쌓이지 않게
+  lastScreenWarnAt = now;
+  if (r.kind === 'crisis') console.warn('[입력 확인] 도움이 필요할 수 있는 표현이 감지되어 전송하지 않았습니다.');
+  return false;
+}
+
+// 활동1 사례 답변 검증: AI 판정 대신, 명백히 의미 없는 답변만 규칙 기반으로 걸러낸다.
+// (짧아도 뜻이 통하는 답까지 AI가 자꾸 부적절로 오판하던 문제를 근본적으로 없애기 위함)
+const JUNK_ANSWERS = ['몰라요', '모름', '모르겠어요', '모르겠음', 'ㅇㅇ', 'ㄴㄴ', 'ㅁㄹ', '글쎄', '글쎄요', '그냥', '없음', '없어요', '패스'];
+function isObviouslyInadequate(answer) {
+  const trimmed = (answer || '').trim();
+  if (!trimmed) return true;
+  // 숫자만 입력(뒤에 "번", "개", 마침표·느낌표 정도만 붙은 경우까지 포함 — 예: "2", "2번", "2.")
+  if (/^\d{1,2}(번|개)?[.!]?$/.test(trimmed)) return true;
+  if (trimmed.replace(/\s/g, '').length <= 1) return true; // 한 글자짜리
+  if (JUNK_ANSWERS.includes(trimmed)) return true; // 상투적인 무의미 답변
+  return false;
+}
+// 활동1 사례 박스 상단에 표시할, 사례 유형별 태그 문구.
+function caseTag(typeKey, value) {
+  const b = hasBatchim(value);
+  switch (typeKey) {
+    case 'model': return `${value}${b ? '을' : '를'} 잘 보여주는 이야기`;
+    case 'contrary': return `${value}${b ? '이라고' : '라고'} 말할 수 없는 이야기`;
+    case 'related': return `${value}${b ? '과' : '와'} 비슷해 보이지만 다른 이야기`;
+    case 'borderline': return `${value}인 것 같기도 하고, 아닌 것 같기도 한 이야기`;
+    default: return '이야기';
+  }
+}
+
+// 앞 이야기와 겹치지 않게 하려면 첫 문장만으로는 부족하다 — 사건의 종류나 마음을 표현한 문구는
+// 보통 뒷 문장에 있기 때문이다. 이야기가 2~3문장으로 짧으므로 본문 전체(최대 250자)를 넘긴다.
+function summarize(text) {
+  const t = (text || '').trim().replace(/\s+/g, ' ');
+  return t.length > 250 ? t.slice(0, 250) + '...' : t;
+}
+function avoidLine(priorSummaries) {
+  if (!priorSummaries.length) return '';
+  const list = priorSummaries.map((s, i) => `${i+1}. ${s}`).join('\n');
+  return fillTemplate(PROMPTS.avoidLineTemplate, { list });
+}
+
+// ---------- 실패 조건(생성 규칙 = 판정 기준) ----------
+// 이야기를 만드는 AI의 "최종 점검"과 판정 AI의 "실패 조건"은 prompts.json의 같은 목록에서 나온다.
+// 한쪽만 고쳐서 생성 규칙과 판정 기준이 어긋나는 일이 없도록 하기 위함이다.
+// spec = { kind: 'model'|'contrary'|'related'|'borderline'|'situation'|'counter', value, context?, def2?, direction? }
+function kindChecks(spec) {
+  let base;
+  if (spec.kind === 'situation') {
+    base = [...PROMPTS.situationChecks, ...((PROMPTS.contextChecks || {})[spec.context] || [])];
+  } else if (spec.kind === 'counter') base = PROMPTS.counterChecks;
+  else base = PROMPTS.caseTypes[spec.kind].failChecks;
+  // 덕목 프로필에 그 덕목에만 해당하는 실패 조건이 있으면 덧붙인다(예: 효의 지도상 유의점).
+  const p = currentProfile();
+  const extra = (p && p.extraFailChecks && p.extraFailChecks[spec.kind]) || [];
+  return [...base, ...extra];
+}
+function bulletList(items, vars) {
+  return items.map(t => '- ' + fillTemplate(t, vars)).join('\n');
+}
+function checkVars(spec) {
+  return { value: spec.value, context: spec.context || '', def2: spec.def2 || '' };
+}
+function allChecks(spec) {
+  const vars = checkVars(spec);
+  return bulletList(PROMPTS.commonChecks, vars) + '\n' + bulletList(kindChecks(spec), vars);
+}
+function sharedParts(value, priorSummaries, easier) {
+  return {
+    avoidLine: avoidLine(priorSummaries),
+    easierLine: easier ? fillTemplate(PROMPTS.easierLine) : '',
+    formatLine: fillTemplate(PROMPTS.formatLine),
+    safetyRules: fillTemplate(PROMPTS.safetyRules),
+    finalCheckIntro: fillTemplate(PROMPTS.finalCheckIntro),
+  };
+}
+
+function caseTypePrompt(type, value, interest, priorSummaries, easier) {
+  const t = PROMPTS.caseTypes[type];
+  return fillTemplate(PROMPTS.caseGenerationTemplate, {
+    value,
+    typeMap: fillTemplate(PROMPTS.caseTypeMap, { value }),
+    typeDefinition: fillTemplate(t.definition, { value }),
+    typeMind: fillTemplate(t.mind, { value }),
+    interestLine: interest ? fillTemplate(PROMPTS.interestLineWithInterest, { interest }) : PROMPTS.interestLineWithout,
+    ...sharedParts(value, priorSummaries, easier),
+    checks: allChecks({ kind: type, value }),
+  });
+}
+
+function situationPrompt(value, context, priorSummaries, easier) {
+  const scopeLine = context === '국제사회' ? fillTemplate(PROMPTS.internationalScopeLine, { value })
+    : context === '국가' ? fillTemplate(PROMPTS.civicScopeLine, { value }) : '';
+  return fillTemplate(PROMPTS.situationTemplate, {
+    value, context,
+    contextDesc: contextInfo(context).desc,
+    scopeLine,
+    ...sharedParts(value, priorSummaries, easier),
+    checks: allChecks({ kind: 'situation', value, context }),
+  });
+}
+
+function q1FollowupPrompt(value, def2, choiceLabel) {
+  return fillTemplate(PROMPTS.q1FollowupTemplate, { value, def2, choiceLabel });
+}
+
+function q1ProbePrompt(value, def2, answer) {
+  return fillTemplate(PROMPTS.q1ProbeTemplate, { value, def2, answer });
+}
+
+function counterDirectionDesc(direction, def2) {
+  return fillTemplate(direction === 'A' ? PROMPTS.counterDirectionA : PROMPTS.counterDirectionB, { def2 });
+}
+
+function counterPrompt(value, def2, direction, reasonText, priorSummaries) {
+  return fillTemplate(PROMPTS.counterTemplate, {
+    value, def2, reasonText,
+    directionDesc: counterDirectionDesc(direction, def2),
+    ...sharedParts(value, priorSummaries, false),
+    checks: allChecks({ kind: 'counter', value, def2, direction }),
+  });
+}
+
+function interestExamplesPrompt(value) {
+  return fillTemplate(PROMPTS.interestExamplesTemplate, { value, pool: PROMPTS.interestPool.join(', ') });
+}
+
+
+// ---------- 사례 검수(판정 AI) ----------
+// 학생에게 보여줄 모든 이야기는 "생성 → 판정 → (탈락 시) 문제를 알려주고 재생성" 과정을 거친다.
+// spec = { kind: 'model'|'contrary'|'related'|'borderline'|'situation'|'counter',
+//          value, context?(활동2), def2?, direction?(활동3) }
+const MAX_GEN_ATTEMPTS = 2; // 최초 생성 1회 + 재생성 1회. 더 늘리면 학생 대기 시간이 길어진다.
+
+function judgePrompt(story, spec) {
+  const vars = {
+    ...checkVars(spec),
+    directionDesc: spec.kind === 'counter' ? counterDirectionDesc(spec.direction, spec.def2 || '') : '',
+  };
+  return fillTemplate(PROMPTS.judgeTemplate, {
+    value: spec.value,
+    kindLabel: fillTemplate(PROMPTS.judgeKindLabels[spec.kind], vars),
+    story,
+    common: bulletList(PROMPTS.commonChecks, vars),
+    criteria: bulletList(kindChecks(spec), vars),
+  });
+}
+
+// 판정 결과 해석. 판정 호출 자체가 실패하거나 형식을 알아볼 수 없으면 "통과"로 처리한다 —
+// 판정 AI의 문제 때문에 수업 진행이 막히면 안 되기 때문이다.
+function parseJudgeResult(raw) {
+  const t = (raw || '').trim();
+  const m = t.match(/판정[^\n]{0,10}?(통과|실패)/);
+  if (!m) return { pass: true, reason: '', unreadable: true };
+  if (m[1] === '통과') return { pass: true, reason: '' };
+  const r = t.match(/문제[^\n:：]{0,4}[:：]\s*(.+)/);
+  return { pass: false, reason: r ? r[1].replace(/\*/g, '').trim() : '기준에 맞지 않음' };
+}
+
+async function judgeStory(story, spec) {
+  if (!story || story.length < 10) return { pass: false, reason: '이야기가 비어 있거나 너무 짧음' };
+  try {
+    return parseJudgeResult(await ask(judgePrompt(story, spec), 'quick'));
+  } catch (e) {
+    return { pass: true, reason: '', skipped: true };
+  }
+}
+
+async function generateVerified(basePrompt, spec) {
+  let draft = '', verdict = null;
+  for (let attempt = 1; attempt <= MAX_GEN_ATTEMPTS; attempt++) {
+    const prompt = attempt === 1
+      ? basePrompt
+      : basePrompt + fillTemplate(PROMPTS.retryFeedbackTemplate, { reason: verdict.reason, draft });
+    draft = await ask(prompt); // 생성 자체의 실패(네트워크 등)는 호출한 쪽에서 처리한다.
+    verdict = await judgeStory(draft, spec);
+    // 교사가 브라우저 개발자 도구(F12 → Console)에서 검수 과정을 확인할 수 있게 남긴다.
+    console.info(`[사례 검수] ${spec.kind} ${attempt}차: ${verdict.pass ? '통과' : '탈락 — ' + verdict.reason}`
+      + (verdict.skipped ? ' (판정 호출 실패로 통과 처리)' : '') + (verdict.unreadable ? ' (판정 형식 오류로 통과 처리)' : ''));
+    if (verdict.pass) return draft;
+  }
+  // 재생성까지 탈락하면, 탈락 사유를 반영해 다시 쓴 마지막 초안을 사용한다.
+  console.warn(`[사례 검수] ${spec.kind}: 재생성 후에도 탈락 — 마지막 초안을 그대로 사용합니다.`);
+  return draft;
+}
+
+// 방 코드(교사가 만들거나, 학생이 링크로 전달받은 값)를 통해 서버(/api/chat)를 거쳐
+// AI를 호출한다. 실제 API 키는 서버에만 있고 이 브라우저에는 전혀 내려오지 않는다.
+let ROOM_CODE = null;
+
+async function ask(prompt, tier = 'default') {
+  if (!ROOM_CODE) throw new Error('방 코드가 없습니다.');
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ roomCode: ROOM_CODE, prompt, tier }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    // 문제 진단용: 실제 실패 원인을 브라우저 콘솔(F12 → Console)에서 확인할 수 있게 남긴다.
+    console.error('AI 호출 실패:', res.status, data.error, data.detail || '');
+    throw new Error(data.error || 'API 요청에 실패했어요.');
+  }
+  return (data.text || '').trim();
+}
+
+// ---------- rendering ----------
+const transcriptEl = document.getElementById('transcript');
+const inputzoneEl = document.getElementById('inputzone');
+const stageTextEl = document.getElementById('stage-text');
+let log = [];
+
+function scrollToBottom() {
+  transcriptEl.scrollTop = transcriptEl.scrollHeight + 999;
+}
+// inputzone(버튼/질문/입력창)의 높이가 나중에 바뀌어도(예: 사례 제공 직후 질문·버튼이 추가되며 커질 때)
+// 대화창이 항상 맨 아래에 고정되도록 크기 변화를 감지해서 재조정한다.
+if (typeof ResizeObserver !== 'undefined') {
+  new ResizeObserver(() => scrollToBottom()).observe(inputzoneEl);
+}
+
+function pushAI(text, opts = {}) {
+  log.push({ who: 'ai', text, box: !!opts.box, hint: !!opts.hint, tag: opts.tag || null, ts: Date.now() });
+  renderLog();
+}
+function pushTodo(text) {
+  log.push({ who: 'ai', text, todo: true, ts: Date.now() });
+  renderLog();
+}
+function pushUser(text) {
+  log.push({ who: 'user', text, ts: Date.now() });
+  renderLog();
+}
+function pushThinking(id) {
+  log.push({ who: 'thinking', text: '', id });
+  renderLog();
+}
+function popThinking(id) {
+  log = log.filter(l => !(l.who === 'thinking' && l.id === id));
+  renderLog();
+}
+// 학생이 입력창에 뭔가 타이핑 중일 때, 실제 메신저처럼 학생 쪽에 "입력 중..." 점 3개 말풍선을 보여준다.
+let userTypingId = null;
+function showUserTyping() {
+  if (userTypingId) return;
+  userTypingId = 'utyping' + Date.now();
+  log.push({ who: 'user', typing: true, id: userTypingId });
+  renderLog();
+}
+function hideUserTyping() {
+  if (!userTypingId) return;
+  log = log.filter(l => l.id !== userTypingId);
+  userTypingId = null;
+  renderLog();
+}
+// 텍스트 입력창에 입력 중 표시 로직을 붙여준다.
+function wireTypingIndicator(ta) {
+  ta.addEventListener('input', () => {
+    if (ta.value.trim()) showUserTyping();
+    else hideUserTyping();
+  });
+}
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+// 버튼 그룹 중복 클릭 방지: 하나라도 누르면 그룹 전체를 즉시 비활성화한다.
+function guardClick(buttons, fn) {
+  return () => {
+    if (buttons.some(b => b.disabled)) return;
+    buttons.forEach(b => { b.disabled = true; });
+    fn();
+  };
+}
+// 여러 메시지를 연달아 보여줄 때, 실제 사람이 메시지를 하나씩 보내는 것처럼
+// 짧은 "타이핑 중" 표시 후 하나씩 자연스럽게 등장시킨다.
+async function sayAI(text, opts = {}) {
+  const tid = 'say' + Date.now() + Math.random();
+  pushThinking(tid);
+  await sleep(450 + Math.random() * 250);
+  popThinking(tid);
+  pushAI(text, opts);
+  await sleep(120);
+}
+async function sayTodo(text) {
+  const tid = 'say' + Date.now() + Math.random();
+  pushThinking(tid);
+  await sleep(400 + Math.random() * 200);
+  popThinking(tid);
+  pushTodo(text);
+  await sleep(120);
+}
+function fmtTime(ts) {
+  const d = new Date(ts);
+  const h = d.getHours(), m = d.getMinutes();
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+function renderLog() {
+  transcriptEl.innerHTML = '';
+  log.forEach((item, i) => {
+    const row = document.createElement('div');
+    row.className = 'row ' + (item.who === 'user' ? 'user' : 'ai');
+    if (item.who === 'thinking') {
+      const d = document.createElement('div');
+      d.className = 'bubble thinking';
+      d.innerHTML = '<span class="dot-flash"><span></span><span></span><span></span></span>';
+      row.appendChild(d);
+      transcriptEl.appendChild(row);
+      return;
+    }
+    if (item.typing) {
+      const d = document.createElement('div');
+      d.className = 'bubble user typing-bubble';
+      d.innerHTML = '<span class="dot-flash user-dots"><span></span><span></span><span></span></span>';
+      row.appendChild(d);
+      transcriptEl.appendChild(row);
+      return;
+    }
+    if (item.box) {
+      const box = document.createElement('div');
+      box.className = 'case-box';
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = item.tag ? ('📖 ' + item.tag) : '📖 이야기';
+      box.appendChild(tag);
+      box.appendChild(document.createTextNode(item.text));
+      row.appendChild(box);
+      transcriptEl.appendChild(row);
+      return;
+    }
+    if (item.hint) {
+      const h = document.createElement('div');
+      h.className = 'hint transcript-hint';
+      h.textContent = item.text;
+      row.appendChild(h);
+      transcriptEl.appendChild(row);
+      return;
+    }
+    if (item.todo) {
+      const t = document.createElement('div');
+      t.className = 'todo-card';
+      const icon = document.createElement('span');
+      icon.className = 'todo-icon';
+      icon.textContent = '☑️';
+      const txt = document.createElement('span');
+      txt.textContent = item.text;
+      t.appendChild(icon);
+      t.appendChild(txt);
+      row.appendChild(t);
+      transcriptEl.appendChild(row);
+      return;
+    }
+    const prev = log[i - 1];
+    const next = log[i + 1];
+    const groupedWithPrev = prev && prev.who === item.who && !prev.box && prev.who !== 'thinking';
+    const groupedWithNext = next && next.who === item.who && !next.box && next.who !== 'thinking';
+    if (groupedWithPrev) row.classList.add('grouped-row');
+    const wrap = document.createElement('div');
+    wrap.className = 'bwrap';
+    const d = document.createElement('div');
+    d.className = 'bubble ' + (item.who === 'ai' ? 'ai' : 'user') + (groupedWithNext ? ' grouped' : '') + (groupedWithPrev ? ' tight' : '');
+    d.textContent = item.text;
+    wrap.appendChild(d);
+    if (!groupedWithNext) {
+      const t = document.createElement('span');
+      t.className = 'timestamp';
+      t.textContent = fmtTime(item.ts || Date.now());
+      wrap.appendChild(t);
+    }
+    row.appendChild(wrap);
+    transcriptEl.appendChild(row);
+  });
+  scrollToBottom();
+  if (stageTextEl) stageTextEl.textContent = STAGE_LABEL[state.step] || '';
+}
+
+function setInputChips(chips) {
+  inputzoneEl.innerHTML = '';
+  hideUserTyping();
+  renderUndoRow();
+  const row = document.createElement('div');
+  row.className = 'choices';
+  const allButtons = [];
+  chips.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (c.variant ? ' ' + c.variant : '');
+    b.textContent = c.label;
+    b.disabled = state.busy || !!c.disabled;
+    b.onclick = () => {
+      if (b.disabled) return;
+      allButtons.forEach(btn => { btn.disabled = true; }); // 중복 클릭 방지: 누르는 즉시 전부 비활성화
+      c.onClick();
+    };
+    allButtons.push(b);
+    row.appendChild(b);
+  });
+  inputzoneEl.appendChild(row);
+  saveCheckpoint(() => setInputChips(chips));
+}
+
+function setInputText(placeholder, onSubmit, opts = {}) {
+  inputzoneEl.innerHTML = '';
+  hideUserTyping();
+  renderUndoRow();
+  if (opts.chipsAbove) {
+    const row = document.createElement('div');
+    row.className = 'choices';
+    opts.chipsAbove.forEach(c => {
+      const b = document.createElement('button');
+      b.className = 'chip' + (c.variant ? ' ' + c.variant : '');
+      b.textContent = c.label;
+      b.disabled = state.busy || !!c.disabled;
+      b.onclick = () => c.onClick();
+      row.appendChild(b);
+    });
+    inputzoneEl.appendChild(row);
+  }
+  const trow = document.createElement('div');
+  trow.className = 'textrow';
+  const ta = document.createElement('textarea');
+  ta.placeholder = placeholder;
+  ta.disabled = state.busy;
+  const btn = document.createElement('button');
+  btn.className = 'send';
+  btn.innerHTML = '&#10148;';
+  btn.disabled = state.busy;
+  const submit = () => {
+    const v = ta.value.trim();
+    if (!v || state.busy || btn.disabled) return;
+    if (!passesInputScreen(v)) return;
+    hideUserTyping();
+    btn.disabled = true;
+    ta.disabled = true;
+    onSubmit(v);
+  };
+  btn.onclick = submit;
+  ta.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
+  });
+  wireTypingIndicator(ta);
+  trow.appendChild(ta);
+  trow.appendChild(btn);
+  inputzoneEl.appendChild(trow);
+  ta.focus();
+  if (opts.checkpoint !== false) {
+    saveCheckpoint(() => setInputText(placeholder, onSubmit, opts));
+  }
+}
+
+function setBusy(v) { state.busy = v; }
+
+// ---------- undo (되돌리기) ----------
+let checkpoint = null;
+function saveCheckpoint(redo) {
+  checkpoint = { state: JSON.parse(JSON.stringify(state)), logLen: log.length, redo };
+}
+function renderUndoRow(extraChips = []) {
+  // ⚠ 이 화면을 그리는 함수가 끝나면서 saveCheckpoint()를 다시 호출해 checkpoint를
+  // "지금 이 화면"으로 덮어쓰기 때문에, 버튼 클릭 시점에 전역 checkpoint를 읽으면
+  // 항상 "자기 자신"을 다시 그리는 것으로 귀결되는 버그가 있었다.
+  // → 버튼을 만드는 지금 이 순간의 checkpoint를 스냅샷으로 따로 붙잡아,
+  //    나중에 전역값이 바뀌어도 이 버튼은 그 스냅샷(=진짜 직전 화면)만 쓰도록 고정한다.
+  const snapshot = checkpoint;
+  if (!snapshot && extraChips.length === 0) return;
+  const row = document.createElement('div');
+  row.className = 'choices';
+  const allButtons = [];
+  if (snapshot) {
+    const b = document.createElement('button');
+    b.className = 'chip secondary';
+    b.textContent = '↩️ 이전 답 다시 쓰기';
+    b.onclick = () => { if (b.disabled) return; allButtons.forEach(btn => { btn.disabled = true; }); undoTo(snapshot); };
+    allButtons.push(b);
+    row.appendChild(b);
+  }
+  extraChips.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (c.variant ? ' ' + c.variant : '');
+    b.textContent = c.label;
+    b.onclick = () => { if (b.disabled) return; allButtons.forEach(btn => { btn.disabled = true; }); c.onClick(); };
+    allButtons.push(b);
+    row.appendChild(b);
+  });
+  inputzoneEl.appendChild(row);
+}
+function undoTo(snapshot) {
+  if (!snapshot) return;
+  if (checkpoint === snapshot) checkpoint = null; // 스냅샷이 여전히 최신 checkpoint라면 정리
+  Object.keys(state).forEach(k => { delete state[k]; });
+  Object.assign(state, JSON.parse(JSON.stringify(snapshot.state)));
+  log.length = snapshot.logLen;
+  renderLog();
+  snapshot.redo();
+}
+
+// ---------- flow ----------
+async function startApp() {
+  appStarted = true;
+  appliedLessonSig = lessonSig();
+  await sayAI(`👋 안녕하세요! 저는 여러분의 도덕 수업을 도와주는 AI 도우미예요. 오늘 함께 탐구할 덕목과 관련된 다양한 사례와 상황을 제공해 줄게요.`);
+  await sayAI(`🧠 하지만 중요한 판단은 언제나 여러분이 직접 해야 해요. 지금부터 저와 함께 의미 있는 도덕 수업을 만들어 보아요!`);
+  await sayAI(`🤖 저는 사람이 아니라 AI예요. 제가 하는 말이 틀릴 수도 있어요.
+
+🔒 그리고 꼭 지켜 주세요! 이름, 전화번호, 주소, 학교·반·번호 같은 개인정보나 친구·가족의 비밀은 쓰지 않기로 해요. 여기에 쓴 글 중 일부는 AI가 질문을 만들 수 있도록 AI 회사로 보내져요.`);
+  setInputChips([{ label: '✏️ 시작할게요', onClick: onStartClicked }]);
+}
+
+function onStartClicked() {
+  pushUser('시작할게요');
+  const p = findProfile(LESSON.virtue);
+  if (!p) console.info(`[덕목] "${LESSON.virtue}"은(는) 지도서 정의가 등록되지 않은 덕목입니다 — 일반 모드로 진행합니다.`);
+  beginWithValue(p ? p.name : LESSON.virtue);
+}
+
+// 교사가 수업 설정에서 정해 둔 덕목으로 탐구를 시작한다.
+async function beginWithValue(name) {
+  state.value = name;
+  state.step = 'act1_intro';
+  const intro = `🌟 오늘 우리가 함께 탐구할 덕목은 [${name}]${hasBatchim(name) ? '이에요' : '예요'}!`;
+  await sayAI(`${intro}
+
+🔍 [${state.value}]${hasBatchim(state.value) ? '이' : '가'} 무엇인지, 어떤 상황에서 어떤 의미를 가지는지 지금부터 함께 깊이 탐구해볼 거예요.`);
+  await sayAI(`✋ 잠깐! 지금은 AI의 도움보다 내 생각이 가장 먼저예요!
+
+📒 내가 알고 있는 [${state.value}]${hasBatchim(state.value) ? '과' : '와'} 관련있는 사례를 떠올려보세요.`);
+  await sayTodo('활동지 ①에 먼저 써보세요. 🖊️');
+  setInputChips([{ label: '🤖 다 썼어요, 사례 보여주세요', onClick: onCaseRequest }]);
+}
+
+function onCaseRequest() {
+  pushUser('다 썼어요, 사례 보여주세요');
+  state.step = 'act1_interest';
+  askInterestExamples();
+}
+
+async function askInterestExamples() {
+  setBusy(true);
+  const tid = 't' + Date.now();
+  pushThinking(tid);
+  let examples = ['동물', '운동', '음악', '미술', '요리', '여행'];
+  try {
+    const text = await ask(interestExamplesPrompt(state.value), 'default');
+    const parts = text.split(',').map(s => s.trim()).filter(Boolean);
+    const clean = parts.filter(p => PROMPTS.interestPool.includes(p));
+    if (clean.length >= 4) examples = clean.slice(0, 6);
+  } catch (e) { /* fall back to defaults */ }
+  popThinking(tid);
+  setBusy(false);
+  pushAI(`🎯 여러분에게 좀 더 와닿는 사례를 제공하기 위해 한 가지만 물어볼게요!
+
+❓평소에 어떤 분야에 관심이 있나요? 아래 중에서 골라주세요!`);
+  const chips = examples.map(ex => ({ label: ex, onClick: () => onInterestPick(ex) }));
+  chips.push({ label: '없어요', variant: 'secondary', onClick: () => onInterestPick('없어요') });
+  setInputChips(chips);
+}
+
+function onInterestPick(v) {
+  pushUser(v);
+  const isNone = PROMPTS.noneWords.some(w => v.includes(w));
+  if (isNone) {
+    state.interest = null;
+    pushAI('알겠어요! 그럼 다양한 일상 사례로 시작해볼게요 😊');
+  } else {
+    state.interest = v;
+  }
+  beginCases();
+}
+
+function beginCases() {
+  state.caseIdx = 0;
+  state.cases = [];
+  state.caseEasedThisSlot = false;
+  state.caseAnswerRejectCount = 0;
+  generateAndShowCase();
+}
+
+// idx번째 사례를 만들 때 필요한 조건을 지금 상태에서 계산한다.
+// key는 이 조건들을 합친 값으로, 미리 만들어 둔 사례가 지금 조건과 같은지 비교하는 데 쓴다.
+function planCase(idx, easier) {
+  const type = CASE_TYPES[idx];
+  const priorSummaries = state.cases.map(c => summarize(c.text));
+  const key = JSON.stringify([idx, easier, state.value, state.interest, priorSummaries]);
+  return { idx, type, easier, priorSummaries, key };
+}
+
+function produceCase(plan) {
+  const p = caseTypePrompt(plan.type.key, state.value, state.interest, plan.priorSummaries, plan.easier);
+  return generateVerified(p, { kind: plan.type.key, value: state.value });
+}
+
+// 학생이 지금 사례를 읽고 답을 쓰는 동안 다음 사례를 미리 만들고 검수해 둔다.
+// 검수 과정이 추가되어도 "다음 사례 만나러 가기"를 누른 뒤 기다리는 시간이 늘지 않게 하기 위함이다.
+// 되돌리기·다른 사례로 바꾸기·초기화로 조건이 바뀌면 key가 달라져 미리 만든 것은 쓰지 않는다.
+let casePrefetch = null; // { key, promise }
+function startCasePrefetch() {
+  casePrefetch = null;
+  const nextIdx = state.caseIdx + 1;
+  if (nextIdx >= CASE_TYPES.length) return;
+  const plan = planCase(nextIdx, false);
+  const promise = produceCase(plan);
+  promise.catch(() => {}); // 실패는 실제로 꺼내 쓸 때 처리한다
+  casePrefetch = { key: plan.key, promise };
+}
+
+async function generateAndShowCase(easier = false) {
+  state.step = 'act1_case';
+  setBusy(true);
+  const tid = 't' + Date.now();
+  pushThinking(tid);
+  const idx = state.caseIdx;
+  const type = CASE_TYPES[idx];
+  const plan = planCase(idx, easier);
+  let text;
+  try {
+    if (casePrefetch && casePrefetch.key === plan.key) {
+      const pf = casePrefetch;
+      casePrefetch = null;
+      text = await pf.promise;
+    } else {
+      text = await produceCase(plan);
+    }
+  } catch (e) {
+    text = '(이야기를 만드는 데 문제가 생겼어요. 다시 시도해 주세요.)';
+  }
+  popThinking(tid);
+  setBusy(false);
+
+  state.cases.push({ text });
+  startCasePrefetch();
+
+  const ordinal = ['첫','두','세','네'][idx] + ' 번째';
+  await sayAI(`📖 ${ordinal} 사례예요 (${idx+1}/4):`);
+  await sayAI(text, { box: true, tag: caseTag(type.key, state.value) });
+  renderCaseInputArea();
+}
+
+function onHarderCaseComplain() {
+  if (!state.caseEasedThisSlot) {
+    pushUser('사례가 어려워요');
+    state.caseEasedThisSlot = true;
+    pushAI('알겠어요, 조금 더 쉬운 사례로 바꿔드릴게요 🔄');
+    generateAndShowCase(true);
+  } else {
+    pushUser('다른 사례로 바꿔주세요');
+    pushAI('새로운 사례로 보여드릴게요 🔄');
+    generateAndShowCase(false);
+  }
+}
+
+function renderCaseInputArea() {
+  const type = CASE_TYPES[state.caseIdx];
+  const q = type.ask(state.value);
+  inputzoneEl.innerHTML = '';
+  hideUserTyping();
+  const chipLabel = state.caseEasedThisSlot ? '🔄 다른 사례로 바꿔볼래요' : '😵 사례가 어려워요';
+  const extraChips = [{ label: chipLabel, variant: 'secondary', onClick: onHarderCaseComplain }];
+  renderUndoRow(extraChips);
+  const qEl = document.createElement('div');
+  qEl.className = 'bubble ai';
+  qEl.style.margin = '6px 0';
+  qEl.textContent = '🤔 ' + q;
+  inputzoneEl.appendChild(qEl);
+  const trow = document.createElement('div');
+  trow.className = 'textrow';
+  const ta = document.createElement('textarea');
+  ta.placeholder = '내 생각을 적어보세요';
+  const btn = document.createElement('button');
+  btn.className = 'send';
+  btn.innerHTML = '&#10148;';
+  const submit = () => { const v = ta.value.trim(); if (v && !btn.disabled && passesInputScreen(v)) { hideUserTyping(); btn.disabled = true; ta.disabled = true; onCaseAnswer(v); } };
+  btn.onclick = submit;
+  ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } });
+  wireTypingIndicator(ta);
+  trow.appendChild(ta); trow.appendChild(btn);
+  inputzoneEl.appendChild(trow);
+  ta.focus();
+  saveCheckpoint(renderCaseInputArea);
+}
+
+// 활동1 사례 탐구질문에 대한 반응 — Green 단계 원칙상 AI가 학생 생각에 개입하면 안 되므로,
+// 내용과 무관한 짧은 확인 멘트를 미리 정해둔 목록에서 무작위로 고른다(AI 생성 불필요).
+const MIRROR_REPLIES = ['네, 잘 들었어요.', '알겠어요.', '적어주셔서 고마워요.', '확인했어요.', '그렇군요.'];
+let lastMirrorIdx = -1;
+function pickMirrorReply() {
+  let idx;
+  do { idx = Math.floor(Math.random() * MIRROR_REPLIES.length); } while (idx === lastMirrorIdx && MIRROR_REPLIES.length > 1);
+  lastMirrorIdx = idx;
+  return MIRROR_REPLIES[idx];
+}
+
+async function onCaseAnswer(v) {
+  pushUser(v);
+  setBusy(true);
+  inputzoneEl.innerHTML = '';
+
+  // 이 검증은 AI 판단이 아니라 명백한 무의미 입력(숫자만, 한 글자, 상투어)만 규칙으로 걸러내는 것이라
+  // 오탐(정상 답을 잘못 막는) 위험이 없다. 그래서 "1회 제한" 같은 예외 없이 몇 번이든 항상 적용한다.
+  const adequate = !isObviouslyInadequate(v);
+
+  if (!adequate) {
+    setBusy(false);
+    state.caseAnswerRejectCount++;
+    pushAI('🤔 조금 더 자세히 생각을 들려줄 수 있을까요? 왜 그렇게 느꼈는지 궁금해요!');
+    renderCaseInputArea();
+    return;
+  }
+
+  setBusy(false);
+  pushAI(pickMirrorReply());
+  await sleep(300);
+
+  const isLast = state.caseIdx === 3;
+  if (!isLast) {
+    await sayTodo('함께 탐구한 내용을 활동지에도 기록했나요?');
+    const nextOrdinal = ['두','세','네'][state.caseIdx];
+    setInputChips([{ label: `👀 ${nextOrdinal} 번째 사례 만나러 가기`, onClick: () => {
+      pushUser(`${nextOrdinal} 번째 사례 만나러 갈게요`);
+      state.caseIdx++;
+      state.caseEasedThisSlot = false;
+      state.caseAnswerRejectCount = 0;
+      generateAndShowCase();
+    }}]);
+  } else {
+    pushAI(`✨ 네 가지 사례를 모두 살펴봤어요!
+
+네 가지 사례를 탐구해보니, [${state.value}]의 뜻이 무엇인지 알 것 같나요?
+[${state.value}] 뜻을 적어 보세요! ✏️`);
+    state.step = 'act1_def1';
+    setInputText('내가 생각하는 뜻을 적어보세요', onDef1Submit);
+  }
+}
+
+async function onDef1Submit(v) {
+  pushUser(v);
+  state.def1 = v;
+  await sayAI(`✏️ 내가 정리한 [${state.value}]의 뜻은 "${v}"에요.`);
+  await sayTodo('활동지 ③에도 정리해 주세요.');
+  state.step = 'act2_menu';
+  setInputChips([{ label: '🌏 활동2 시작하기', onClick: onAct2Start }]);
+}
+
+function onAct2Start() {
+  pushUser('활동2 시작할게요');
+  pushAI(`🌏 다양한 관계 속에서 [${state.value}]의 의미를 확장해 볼까요? 아래 중 하나를 골라보세요!`);
+  setInputChips(contextList().map(c => ({ label: contextChipLabel(c.name), onClick: () => onContextPick(c.name) })));
+}
+
+async function onContextPick(ctx, easier = false) {
+  pushUser(ctx);
+  state.context = ctx;
+  state.step = 'act2_situation';
+  setBusy(true);
+  const tid = 't' + Date.now();
+  pushThinking(tid);
+  let text;
+  // 활동1 사례 + 지금까지 나온 활동2 상황을 전부 합쳐서, 실제로 겹치지 않도록 구체적으로 전달한다.
+  const priorSummaries = [
+    ...state.cases.map(c => summarize(c.text)),
+    ...state.situationHistory.map(s => summarize(s)),
+  ];
+  try { text = await generateVerified(situationPrompt(state.value, ctx, priorSummaries, easier), { kind: 'situation', value: state.value, context: ctx }); }
+  catch (e) { text = '(이야기를 만드는 데 문제가 생겼어요.)'; }
+  popThinking(tid);
+  setBusy(false);
+  state.situationHistory.push(text);
+  await sayAI(`📖 [${ctx}] ${PROMPTS.situationContexts[ctx] ? '관계 속 ' : ''}이야기예요:`);
+  await sayAI(text, { box: true });
+  renderAct2SituationInput(ctx);
+}
+
+function renderAct2SituationInput(ctx) {
+  inputzoneEl.innerHTML = '';
+  hideUserTyping();
+  renderUndoRow();
+  const row1 = document.createElement('div');
+  row1.className = 'choices';
+  const allButtons = [];
+  if (!state.situationEased) {
+    const b = document.createElement('button');
+    b.className = 'chip secondary';
+    b.textContent = `😵 ${ctxPhrase(ctx)} 다른 이야기`;
+    b.onclick = guardClick(allButtons, () => { pushUser(`${ctxPhrase(ctx)} 다른 이야기로 보여주세요`); state.situationEased = true; onContextPick(ctx, true); });
+    allButtons.push(b);
+    row1.appendChild(b);
+  }
+  contextList().map(c => c.name).filter(c => c !== ctx).forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'chip secondary';
+    b.textContent = c;
+    b.onclick = guardClick(allButtons, () => { state.situationEased = false; onContextPick(c); });
+    allButtons.push(b);
+    row1.appendChild(b);
+  });
+  inputzoneEl.appendChild(row1);
+  const row2 = document.createElement('div');
+  row2.className = 'choices';
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'chip';
+  nextBtn.textContent = '✏️ 다음 질문으로 넘어갈게요';
+  nextBtn.onclick = guardClick(allButtons, onAct2Next);
+  allButtons.push(nextBtn);
+  row2.appendChild(nextBtn);
+  inputzoneEl.appendChild(row2);
+  saveCheckpoint(() => renderAct2SituationInput(ctx));
+}
+
+async function onAct2Next() {
+  pushUser('다음 질문으로 넘어갈게요');
+  await sayTodo('위의 이야기를 통해 새롭게 발견한 [' + state.value + ']의 의미를 활동지 ④에 정리해보세요.');
+  await sayAI(`🖊 처음 정리한 뜻은 "${state.def1}" 였어요. 관계 속 탐구를 바탕으로 [${state.value}]의 뜻을 다시 정리해서 적어 주세요.`);
+  state.step = 'act2_def2';
+  await sayAI('🔒 지금부터 쓰는 글은 AI에게 전달돼요. 이름 같은 개인정보는 쓰지 않아요.');
+  setInputText('다시 정리한 뜻을 적어보세요 (개인정보는 쓰지 않아요)', onDef2Submit);
+}
+
+async function onDef2Submit(v) {
+  pushUser(v);
+  state.def2 = v;
+  await sayAI(`📝 새로운 뜻은 "${v}"에요.`);
+  await sayTodo('활동지 ⑤에 정리하고 짝과 비교해 보세요.');
+  await sayTodo('기존의 뜻에서 달라진 점이 있다면 활동지 ⑥에 써보세요.');
+  state.step = 'act3_q1';
+  setInputChips([{ label: '🟡 활동3 시작하기', onClick: onAct3Start }]);
+}
+
+function onAct3Start() {
+  pushUser('활동3 시작할게요');
+  pushAI(`🤔 이제 내가 정리한 [${state.value}]의 뜻이 새로운 상황에 어울리는지 확인해 볼까요? 그 전에 하나만 물어볼게요 — 내가 정리한 [${state.value}]의 뜻이 모든 상황에서 딱 맞을 것 같나요?`);
+  setInputChips([
+    { label: '🙋 모든 상황에서 맞는다', onClick: () => onQ1Pick(1) },
+    { label: '🤨 맞지 않는 상황이 있을 수도 있다', onClick: () => onQ1Pick(2) },
+    { label: '❓ 모르겠다', onClick: () => onQ1Pick(3) },
+  ]);
+}
+
+const Q1_FALLBACK = {
+  1: '어떤 점 때문에 이 뜻이 어떤 상황에서도 다 맞을 거라고 생각했어요?',
+  2: '어떤 점 때문에 맞지 않는 경우도 있을 것 같다고 생각했어요? 어떤 상황이 떠올랐는지 말해줄 수 있나요?',
+  3: '어떤 부분이 헷갈렸는지 말해줄 수 있나요?',
+};
+
+async function onQ1Pick(n) {
+  const labels = { 1: '모든 상황에서 맞는다', 2: '맞지 않는 상황이 있을 수도 있다', 3: '모르겠다' };
+  pushUser(labels[n]);
+  state.q1choice = n;
+  if (n === 1) state.direction = 'A';
+  else if (n === 2) state.direction = 'B';
+  setBusy(true);
+  const tid = 't' + Date.now();
+  pushThinking(tid);
+  let q = Q1_FALLBACK[n];
+  try { q = await ask(q1FollowupPrompt(state.value, state.def2, labels[n]), 'quick'); } catch (e) {}
+  popThinking(tid);
+  setBusy(false);
+  pushAI('🤔 ' + q);
+  setInputText('내 생각을 적어보세요 (개인정보는 쓰지 않아요)', onQ1FollowupSubmit);
+}
+
+// ④ 학생의 첫 답변에 이어, ⑤ 그 답변의 빈틈을 한 번 더 캐묻는 소크라테스식 두 번째 질문.
+async function onQ1FollowupSubmit(v) {
+  // 3~4학년 "질문 1개" 옵션: 파고드는 두 번째 질문 없이 바로 가상 상황 단계로 간다.
+  if (skipProbeActive()) {
+    pushUser(v);
+    state.q1answer1 = v;
+    await finishQ1Dialogue('');
+    return;
+  }
+  pushUser(v);
+  state.q1answer1 = v;
+  setBusy(true);
+  const tid = 't' + Date.now();
+  pushThinking(tid);
+  let q2 = '그 생각을 조금 더 자세히 들려줄 수 있을까요?';
+  try { q2 = await ask(q1ProbePrompt(state.value, state.def2, v), 'quick'); } catch (e) {}
+  popThinking(tid);
+  setBusy(false);
+  pushAI('🤔 ' + q2);
+  setInputText('내 생각을 적어보세요 (개인정보는 쓰지 않아요)', onQ1ProbeSubmit);
+}
+
+// ⑥ 학생의 두 번째 답변까지 받은 뒤 ⑦ 가상 상황으로 넘어간다.
+async function onQ1ProbeSubmit(v) {
+  pushUser(v);
+  await finishQ1Dialogue(v);
+}
+
+async function finishQ1Dialogue(v) {
+  state.q1answer2 = v;
+  state.q1reason = (state.q1answer1 + ' ' + state.q1answer2).trim();
+  if (state.direction === null) {
+    state.direction = /맞|어렵|헷갈리는게 없|그래도/.test(state.q1reason) ? 'A' : 'B';
+  }
+  await sayTodo('지금까지 저와 함께 나눈 대화를 활동지 ⑦에 정리해 주세요.');
+  await sayAI('👀 이제 가상 상황을 만나러 가볼까요?');
+  state.step = 'act3_situation';
+  setInputChips([{ label: '🟡 가상 상황 보기', onClick: onAct3Situation }]);
+}
+
+async function onAct3Situation(userMsg) {
+  pushUser(userMsg || '가상 상황 보여주세요');
+  setBusy(true);
+  const tid = 't' + Date.now();
+  pushThinking(tid);
+  // 활동1 사례 + 활동2 상황 + 지금까지 나온 활동3 가상 상황을 전부 합쳐서 겹치지 않게 한다.
+  const priorSummaries = [
+    ...state.cases.map(c => summarize(c.text)),
+    ...state.situationHistory.map(s => summarize(s)),
+    ...state.counterHistory.map(s => summarize(s)),
+  ];
+  let textA, textB;
+  // 상황1·상황2를 순서대로 만들면 그만큼 오래 걸리므로, 동시에 병렬로 요청한다.
+  // (B가 A를 회피 목록에 참고하지 못하게 되는 대신, 방향 자체가 서로 달라서 겹칠 위험은 낮다.)
+  [textA, textB] = await Promise.all([
+    generateVerified(counterPrompt(state.value, state.def2, 'A', state.q1reason, priorSummaries),
+      { kind: 'counter', value: state.value, def2: state.def2, direction: 'A' })
+      .catch(() => '(이야기를 만드는 데 문제가 생겼어요.)'),
+    generateVerified(counterPrompt(state.value, state.def2, 'B', state.q1reason, priorSummaries),
+      { kind: 'counter', value: state.value, def2: state.def2, direction: 'B' })
+      .catch(() => '(이야기를 만드는 데 문제가 생겼어요.)'),
+  ]);
+  popThinking(tid);
+  setBusy(false);
+  state.counterHistory.push(textA, textB);
+  // 방향(A/B)을 학생마다 항상 같은 순서로 보여주면 "1번은 늘 이런 상황"이라는 고정관념이
+  // 생길 수 있으므로, 제시 순서를 무작위로 섞는다.
+  const flip = Math.random() < 0.5;
+  state.situationTexts = flip ? [textB, textA] : [textA, textB];
+  state.situationDirections = flip ? ['B', 'A'] : ['A', 'B'];
+  state.currentSituationIdx = 0;
+  await showCurrentSituation();
+}
+
+async function showCurrentSituation() {
+  const idx = state.currentSituationIdx;
+  await sayAI(`🟡 가상 상황${idx + 1}이에요. 내가 정리한 [${state.value}]의 뜻이 잘 적용되는지 확인해 보세요.`);
+  await sayAI(state.situationTexts[idx], { box: true, tag: `가상 상황${idx + 1}` });
+  renderSituationJudgmentChoice();
+}
+
+// 가상 상황(현재 보고 있는 것 하나만) 다른 버전으로 재생성.
+async function onRegenCurrentSituation() {
+  pushUser('다른 가상 상황으로 보여주세요');
+  setBusy(true);
+  const tid = 't' + Date.now();
+  pushThinking(tid);
+  const idx = state.currentSituationIdx;
+  const otherText = state.situationTexts[1 - idx];
+  const priorSummaries = [
+    ...state.cases.map(c => summarize(c.text)),
+    ...state.situationHistory.map(s => summarize(s)),
+    ...state.counterHistory.map(s => summarize(s)),
+    ...(otherText ? [summarize(otherText)] : []),
+  ];
+  let text;
+  const dir = state.situationDirections[idx];
+  try {
+    text = await generateVerified(counterPrompt(state.value, state.def2, dir, state.q1reason, priorSummaries),
+      { kind: 'counter', value: state.value, def2: state.def2, direction: dir });
+  }
+  catch (e) { text = '(이야기를 만드는 데 문제가 생겼어요.)'; }
+  popThinking(tid);
+  setBusy(false);
+  state.situationTexts[idx] = text;
+  state.counterHistory.push(text);
+  await sayAI(`🟡 다른 가상 상황${idx + 1}이에요:`);
+  await sayAI(text, { box: true, tag: `가상 상황${idx + 1}` });
+  renderSituationJudgmentChoice();
+}
+
+// 상황을 보여준 뒤: "적용 결과를 골라보세요" + 3지선다 + 다른 가상 상황 버튼.
+function renderSituationJudgmentChoice() {
+  inputzoneEl.innerHTML = '';
+  hideUserTyping();
+  renderUndoRow([{ label: '🔄 다른 가상 상황으로', variant: 'secondary', onClick: onRegenCurrentSituation }]);
+  const q = document.createElement('div');
+  q.className = 'bubble ai';
+  q.style.margin = '6px 0';
+  q.textContent = `🤔 내가 정리한 [${state.value}]의 뜻을 적용한 결과를 아래에서 골라보세요.`;
+  inputzoneEl.appendChild(q);
+  const row = document.createElement('div');
+  row.className = 'choices';
+  const allButtons = [];
+  ['내 뜻이 그래도 맞아요', '내 뜻을 일부 고쳐야 할 것 같아요', '내 뜻과 맞지 않는 상황이에요'].forEach(label => {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.textContent = label;
+    b.onclick = guardClick(allButtons, () => onJudgmentChoice(label));
+    allButtons.push(b);
+    row.appendChild(b);
+  });
+  inputzoneEl.appendChild(row);
+  saveCheckpoint(renderSituationJudgmentChoice);
+}
+
+function onJudgmentChoice(label) {
+  pushUser(label);
+  pushAI('✏️ 위와 같은 판단을 한 이유를 적어보세요.');
+  setInputText('이유를 적어보세요', onJudgmentReasonSubmit);
+}
+
+// 판단 이유 제출 — AI는 이 판단에 대해 옳고 그름을 평가하거나 반응하지 않고 곧바로 다음 단계로 진행한다.
+async function onJudgmentReasonSubmit(v) {
+  pushUser(v);
+  if (state.currentSituationIdx === 0) {
+    state.currentSituationIdx = 1;
+    await showCurrentSituation();
+  } else {
+    await finishAct3();
+  }
+}
+
+async function finishAct3() {
+  await sayTodo('지금까지 저와 나눈 대화를 활동지 ⑧에 정리해 주세요.');
+  await sayAI('🎉 지금부터는 스스로 해보는 시간이에요. 끝까지 최선을 다해 볼까요?🎉');
+  await sayAI('💾 대화 내용을 다시 보고 싶다면, 화면을 위로 올려보세요!');
+  state.step = 'end';
+  inputzoneEl.innerHTML = '<div class="hint" style="text-align:center;padding:14px;">🙈 오늘의 탐구가 끝났어요. 스스로 정리하는 시간을 가져보세요!</div>';
+}
+
+function resetAll() {
+  Object.keys(state).forEach(k => { delete state[k]; });
+  Object.assign(state, JSON.parse(JSON.stringify(INITIAL_STATE)));
+  log = [];
+  checkpoint = null;
+  casePrefetch = null;
+  renderLog();
+  startApp();
+}
+
+function updateClock() {
+  const el = document.getElementById('clock');
+  if (!el) return;
+  const d = new Date();
+  const h = d.getHours(), m = d.getMinutes();
+  el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+updateClock();
+setInterval(updateClock, 15000);
+
+// ---------- 방(room) 관리: API 키 등록 / 공유 링크·QR / 학생 접속 ----------
+function buildShareUrl(code) {
+  const url = new URL(window.location.href);
+  url.search = '';
+  url.hash = '';
+  url.searchParams.set('room', code);
+  if (LESSON.virtue) url.searchParams.set('v', LESSON.virtue);
+  // 학년은 '직접 입력한 덕목'일 때만 링크에 담는다(등록된 덕목은 지도서 학년으로 고정)
+  if (LESSON.virtue && !findProfile(LESSON.virtue) && LESSON.grade) url.searchParams.set('g', LESSON.grade);
+  return url.toString();
+}
+
+// ---------- 수업 설정(덕목, 직접 입력한 덕목의 학년) ----------
+const LESSON_KEY = 'moral_explorer_lesson';
+const VIRTUE_CUSTOM = '__custom';
+let appStarted = false;
+let appliedLessonSig = null; // 지금 대화가 어떤 설정으로 시작됐는지
+
+function lessonSig() { return JSON.stringify([LESSON.virtue, LESSON.grade]); }
+// 학생에게 링크를 줄 수 있는 상태인지: 덕목이 정해졌고, 직접 입력한 덕목이면 학년도 골랐는지
+function lessonReady() {
+  return !!LESSON.virtue && (!!findProfile(LESSON.virtue) || !!LESSON.grade);
+}
+function saveLesson() {
+  try { localStorage.setItem(LESSON_KEY, JSON.stringify(LESSON)); } catch (e) {}
+}
+function loadSavedLesson() {
+  try {
+    const v = JSON.parse(localStorage.getItem(LESSON_KEY) || 'null');
+    if (v) { LESSON.virtue = v.virtue || null; LESSON.grade = v.grade || null; }
+  } catch (e) {}
+}
+function normalizeGrade(g) {
+  return ['3', '4', '5', '6'].includes(String(g)) ? String(g) : null;
+}
+
+function populateVirtueSelect() {
+  const sel = document.getElementById('lesson-virtue');
+  sel.innerHTML = '';
+  const ph = document.createElement('option');
+  ph.value = ''; ph.textContent = '덕목을 골라 주세요'; ph.disabled = true;
+  sel.appendChild(ph);
+  const byGrade = {};
+  (PROMPTS.virtueProfiles || []).forEach(p => { (byGrade[p.grade] = byGrade[p.grade] || []).push(p); });
+  Object.keys(byGrade).sort().forEach(g => {
+    const og = document.createElement('optgroup');
+    og.label = `${g}학년`;
+    byGrade[g].forEach(p => {
+      const o = document.createElement('option');
+      o.value = p.name;
+      o.textContent = `${p.name} (${p.unit})`;
+      og.appendChild(o);
+    });
+    sel.appendChild(og);
+  });
+  const etc = document.createElement('optgroup');
+  etc.label = '기타';
+  const o = document.createElement('option');
+  o.value = VIRTUE_CUSTOM; o.textContent = '✏️ 목록에 없는 덕목 직접 입력';
+  etc.appendChild(o);
+  sel.appendChild(etc);
+}
+
+// LESSON 값을 화면의 선택 상자에 반영
+function renderLessonControls() {
+  const sel = document.getElementById('lesson-virtue');
+  const custom = document.getElementById('lesson-virtue-custom');
+  const p = LESSON.virtue ? findProfile(LESSON.virtue) : null;
+  const isCustom = !!LESSON.virtue && !p;
+  sel.value = !LESSON.virtue ? '' : (p ? p.name : VIRTUE_CUSTOM);
+  custom.style.display = isCustom ? 'block' : 'none';
+  if (isCustom) custom.value = LESSON.virtue;
+  document.getElementById('lesson-grade-row').style.display = isCustom ? 'block' : 'none';
+  document.getElementById('lesson-grade').value = isCustom ? (LESSON.grade || '') : '';
+  updateLessonNote();
+}
+
+function updateLessonNote() {
+  const note = document.getElementById('lesson-note');
+  const p = LESSON.virtue ? findProfile(LESSON.virtue) : null;
+  const g = effectiveGrade();
+  const probeNote = ['3', '4'].includes(g) ? ' 3~4학년이라 활동3의 소크라테스식 질문은 1개로 진행해요.' : '';
+  if (p) {
+    note.textContent = `교과서: ${p.grade}학년 ${p.unit}. 지도서 정의를 기준으로, ${p.grade}학년 수준에 맞춰 사례를 만들어요.` + probeNote;
+  } else if (LESSON.virtue || document.getElementById('lesson-virtue').value === VIRTUE_CUSTOM) {
+    note.textContent = '지도서 정의가 등록되지 않은 덕목이라, AI가 일반적인 뜻으로 사례를 만들어요. 이야기 수준을 맞출 학년을 골라 주세요.' + probeNote;
+  } else {
+    note.textContent = '';
+  }
+}
+
+// 화면의 선택 상자 값을 LESSON에 반영하고 링크·QR을 새로 만든다
+function readLessonControls() {
+  const sel = document.getElementById('lesson-virtue');
+  const custom = document.getElementById('lesson-virtue-custom');
+  const isCustom = sel.value === VIRTUE_CUSTOM;
+  custom.style.display = isCustom ? 'block' : 'none';
+  document.getElementById('lesson-grade-row').style.display = isCustom ? 'block' : 'none';
+  if (isCustom) {
+    LESSON.virtue = custom.value.trim() || null;
+    LESSON.grade = document.getElementById('lesson-grade').value || null;
+  } else {
+    LESSON.virtue = sel.value || null;
+    LESSON.grade = null; // 등록된 덕목은 지도서 학년 고정
+  }
+  saveLesson();
+  updateLessonNote();
+  refreshShareLink();
+}
+
+// 설정이 다 되었을 때만 링크·QR을 보여주고 복사·시작 버튼을 켠다.
+function refreshShareLink() {
+  const ready = lessonReady();
+  const qr = document.getElementById('room-qr');
+  const linkEl = document.getElementById('room-link-display');
+  const hint = document.getElementById('lesson-share-hint');
+  document.getElementById('room-copy-btn').disabled = !ready;
+  document.getElementById('room-continue-btn').disabled = !ready;
+  if (!ready) {
+    qr.style.display = 'none';
+    linkEl.style.display = 'none';
+    hint.textContent = document.getElementById('lesson-virtue').value === VIRTUE_CUSTOM
+      ? '덕목 이름과 학년을 정하면 학생용 QR과 링크가 만들어져요.'
+      : '덕목을 고르면 학생용 QR과 링크가 만들어져요.';
+    return;
+  }
+  hint.textContent = '아래 QR·링크로 들어온 학생은 위 설정으로 시작해요.';
+  const link = buildShareUrl(ROOM_CODE);
+  // 화면에는 한글 덕목 이름이 읽히도록 풀어서 보여준다(복사·QR에는 그대로 쓸 수 있는 인코딩된 주소를 쓴다).
+  let shown = link;
+  try { shown = decodeURI(link); } catch (e) {}
+  linkEl.textContent = shown;
+  linkEl.style.display = 'block';
+  qr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(link);
+  qr.style.display = 'block';
+}
+
+function showRoomInfo() {
+  document.getElementById('setup-step-key').style.display = 'none';
+  document.getElementById('setup-step-room').style.display = 'block';
+  renderLessonControls();
+  refreshShareLink();
+  document.getElementById('setup-overlay').style.display = 'flex';
+}
+
+function hideSetupOverlay() {
+  document.getElementById('setup-overlay').style.display = 'none';
+}
+
+function showShareButton() {
+  const shareBtn = document.getElementById('share-btn');
+  if (shareBtn) shareBtn.style.display = 'flex';
+}
+
+async function createRoom(apiKey) {
+  const errEl = document.getElementById('setup-error');
+  const btn = document.getElementById('setup-create-btn');
+  errEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = '만드는 중...';
+  try {
+    const res = await fetch('/api/create-room', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ apiKey }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '방을 만드는 데 실패했어요.');
+    ROOM_CODE = data.roomCode;
+    localStorage.setItem('moral_explorer_room', ROOM_CODE);
+    showRoomInfo();
+  } catch (e) {
+    errEl.textContent = '⚠️ ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '방 만들기';
+  }
+}
+
+function wireSetupScreen() {
+  document.getElementById('setup-create-btn').onclick = () => {
+    const key = document.getElementById('setup-api-key').value.trim();
+    if (!key) {
+      document.getElementById('setup-error').textContent = '⚠️ API 키를 입력해 주세요.';
+      return;
+    }
+    createRoom(key);
+  };
+  document.getElementById('room-copy-btn').onclick = () => {
+    if (!lessonReady()) return;
+    const link = buildShareUrl(ROOM_CODE);
+    navigator.clipboard.writeText(link).then(() => {
+      const b = document.getElementById('room-copy-btn');
+      const original = b.textContent;
+      b.textContent = '✅ 복사됐어요!';
+      setTimeout(() => { b.textContent = original; }, 1500);
+    }).catch(() => {});
+  };
+  document.getElementById('lesson-virtue').onchange = readLessonControls;
+  document.getElementById('lesson-grade').onchange = readLessonControls;
+  document.getElementById('lesson-virtue-custom').oninput = readLessonControls;
+  document.getElementById('room-continue-btn').onclick = () => {
+    if (!lessonReady()) return;
+    hideSetupOverlay();
+    showShareButton();
+    // 처음 시작하거나 수업 설정이 바뀌었으면 새 설정으로 대화를 다시 시작한다.
+    // (설정을 그대로 두고 링크만 확인한 경우에는 하던 대화를 그대로 이어간다)
+    if (!appStarted || appliedLessonSig !== lessonSig()) resetAll();
+  };
+  document.getElementById('room-restart-link').onclick = (e) => {
+    e.preventDefault();
+    localStorage.removeItem('moral_explorer_room');
+    ROOM_CODE = null;
+    document.getElementById('setup-api-key').value = '';
+    document.getElementById('setup-error').textContent = '';
+    document.getElementById('setup-step-room').style.display = 'none';
+    document.getElementById('setup-step-key').style.display = 'block';
+  };
+}
+
+// ---------- boot ----------
+(async () => {
+  await loadPrompts();
+  populateVirtueSelect();
+  wireSetupScreen();
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const roomFromUrl = urlParams.get('room');
+
+  if (roomFromUrl) {
+    // 학생(또는 공유받은 사람): 키 입력 화면 없이 곧바로 시작. 공유 링크 버튼은 보여주지 않는다.
+    ROOM_CODE = roomFromUrl.toUpperCase();
+    LESSON.virtue = (urlParams.get('v') || '').trim() || null;
+    LESSON.grade = normalizeGrade(urlParams.get('g'));
+    hideSetupOverlay();
+    if (!LESSON.virtue) {
+      // 덕목이 담기지 않은 링크(예: 예전 링크)는 시작할 수 없으므로 안내만 한다.
+      pushAI('⚠️ 이 링크에는 오늘 수업의 덕목 정보가 없어요. 선생님께 새 수업 링크(또는 QR)를 받아 주세요.');
+      return;
+    }
+    startApp();
+    return;
+  }
+
+  loadSavedLesson(); // 교사: 전에 골라둔 수업 설정을 그대로 불러온다
+  const savedRoom = localStorage.getItem('moral_explorer_room');
+  if (savedRoom) {
+    // 이전에 방을 만들어둔 선생님이 돌아온 경우: 바로 이어서 쓸 수 있게 하고, 공유 버튼도 보여준다.
+    ROOM_CODE = savedRoom;
+    if (!lessonReady()) {
+      // 수업 설정(덕목)이 아직 없으면 설정 화면부터 보여준다.
+      showRoomInfo();
+      return;
+    }
+    hideSetupOverlay();
+    showShareButton();
+    startApp();
+    return;
+  }
+
+  // 처음 접속: API 키 입력 화면을 그대로 둔다(#setup-overlay는 기본으로 표시되어 있음).
+})();
+</script>
+</body>
+</html>
