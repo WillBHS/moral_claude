@@ -3,6 +3,7 @@
 // 실제 API 키는 이 서버 함수 밖으로 절대 나가지 않는다.
 
 const { generate } = require('./_anthropic');
+const { findRedisConfig, redisEnvNames, MISSING_MESSAGE } = require('./_redis');
 const { findStrictPersonalInfo } = require('./_privacy');
 
 const MAX_PROMPT_CHARS = 12000; // 정상적인 수업 요청은 이보다 훨씬 짧다(방 코드를 이용한 남용 방지)
@@ -31,12 +32,14 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const redisUrl = process.env.KV_REST_API_URL;
-  const redisToken = process.env.KV_REST_API_TOKEN;
-  if (!redisUrl || !redisToken) {
-    res.status(500).json({ error: '서버 저장소 설정이 되어있지 않습니다.' });
+  const redis = findRedisConfig();
+  if (!redis) {
+    console.error('저장소 환경변수를 찾지 못함. 저장소 관련 환경변수 이름:', redisEnvNames().join(', ') || '(없음)');
+    res.status(500).json({ error: MISSING_MESSAGE, envNames: redisEnvNames() });
     return;
   }
+  const redisUrl = redis.url;
+  const redisToken = redis.token;
 
   let apiKey;
   try {

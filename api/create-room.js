@@ -3,6 +3,7 @@
 // 실제 API 키는 절대 클라이언트로 노출되지 않는다.
 
 const { generate } = require('./_anthropic');
+const { findRedisConfig, redisEnvNames, MISSING_MESSAGE } = require('./_redis');
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 헷갈리는 0/O, 1/I 제외
 const TTL_SECONDS = 60 * 60 * 48; // 방 유효기간: 48시간
@@ -27,12 +28,14 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const redisUrl = process.env.KV_REST_API_URL;
-  const redisToken = process.env.KV_REST_API_TOKEN;
-  if (!redisUrl || !redisToken) {
-    res.status(500).json({ error: '서버 저장소 설정이 되어있지 않습니다. 관리자에게 문의하세요.' });
+  const redis = findRedisConfig();
+  if (!redis) {
+    console.error('저장소 환경변수를 찾지 못함. 저장소 관련 환경변수 이름:', redisEnvNames().join(', ') || '(없음)');
+    res.status(500).json({ error: MISSING_MESSAGE, envNames: redisEnvNames() });
     return;
   }
+  const redisUrl = redis.url;
+  const redisToken = redis.token;
 
   const roomCode = generateRoomCode();
   const trimmedKey = apiKey.trim();
