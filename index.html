@@ -394,7 +394,7 @@
         </div>
         <div class="ls-note" id="lesson-note"></div>
       </div>
-      <p class="setup-hint" style="margin:0 0 8px;text-align:left;background:#FFF7E6;border-radius:10px;padding:8px 10px;color:#7A5A1A;">🔒 학생이 활동2 마지막(다시 정리한 뜻)과 활동3에서 쓴 글은 질문·가상 상황을 만들기 위해 AI 회사(Anthropic) 서버로 보내져요. 전화번호·주소 같은 개인정보와 욕설은 자동으로 막지만, <b>이름은 자동으로 다 걸러지지 않으니</b> 수업 전에 "이름·개인정보는 쓰지 않기"를 꼭 안내해 주세요.</p>
+      <p class="setup-hint" style="margin:0 0 8px;text-align:left;background:#FFF7E6;border-radius:10px;padding:8px 10px;color:#7A5A1A;">🔒 수업 전에 학생들에게 "이름·개인정보는 쓰지 않기"를 꼭 안내해 주세요.</p>
       <p class="setup-hint" id="deploy-url-warning" style="display:none;margin:0 0 8px;text-align:left;background:#FDECEF;border-radius:10px;padding:8px 10px;color:#A12A4A;"></p>
       <p class="setup-hint" id="lesson-share-hint" style="margin:0 0 4px;">아래 QR·링크로 들어온 학생은 위 설정으로 시작해요.</p>
       <img id="room-qr" class="room-qr" alt="학생용 QR 코드">
@@ -1834,9 +1834,7 @@ async function startApp() {
   appliedLessonSig = lessonSig();
   await sayAI(`👋 안녕하세요! 저는 여러분의 도덕 수업을 도와주는 AI 도우미예요. 오늘 함께 탐구할 덕목과 관련된 다양한 사례와 상황을 제공해 줄게요.`);
   await sayAI(`🧠 하지만 중요한 판단은 언제나 여러분이 직접 해야 해요. 지금부터 저와 함께 의미 있는 도덕 수업을 만들어 보아요!`);
-  await sayAI(`🤖 저는 사람이 아니라 AI예요. 제가 하는 말이 틀릴 수도 있어요.
-
-🔒 그리고 꼭 지켜 주세요! 이름, 전화번호, 주소, 학교·반·번호 같은 개인정보나 친구·가족의 비밀은 쓰지 않기로 해요. 여기에 쓴 글 중 일부는 AI가 질문을 만들 수 있도록 AI 회사로 보내져요.`);
+  await sayAI(`🔒 꼭 지켜 주세요! 이름, 전화번호, 주소 같은 개인정보는 쓰지 않기로 해요.`);
   setInputChips([{ label: '✏️ 시작할게요', onClick: onStartClicked }]);
 }
 
@@ -2144,7 +2142,6 @@ async function onAct2Next() {
   await sayTodo('위의 이야기를 통해 새롭게 발견한 [' + state.value + ']의 의미를 활동지 ④에 정리해보세요.');
   await sayAI(`🖊 처음 정리한 뜻은 "${state.def1}" 였어요. 관계 속 탐구를 바탕으로 [${state.value}]의 뜻을 다시 정리해서 적어 주세요.`);
   state.step = 'act2_def2';
-  await sayAI('🔒 지금부터 쓰는 글은 AI에게 전달돼요. 이름 같은 개인정보는 쓰지 않아요.');
   setInputText('다시 정리한 뜻을 적어보세요 (개인정보는 쓰지 않아요)', onDef2Submit);
 }
 
