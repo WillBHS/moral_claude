@@ -115,6 +115,35 @@
     white-space: nowrap;
   }
   #reset-btn .reset-icon { font-size: 15px; display: inline-block; }
+  /* 대화 저장하기 버튼: 탐구가 끝나기 전에는 흐리게(누를 수 없음), 끝나면 밝게 켜진다 */
+  #save-btn {
+    flex: 0 0 auto;
+    display: flex; align-items: center; gap: 5px;
+    padding: 7px 12px 7px 9px;
+    border-radius: 999px;
+    border: none;
+    background: #fff;
+    color: var(--accent-dark);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .15s, background .15s, opacity .2s;
+    white-space: nowrap;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.35);
+  }
+  #save-btn .save-icon { font-size: 15px; display: inline-block; }
+  #save-btn:active { transform: scale(0.95); }
+  #save-btn:disabled {
+    background: rgba(255,255,255,0.22); color: #fff; font-weight: 500;
+    opacity: .45; cursor: default; box-shadow: none;
+  }
+  .lbl-short { display: none; }
+  @media (max-width: 560px) {
+    .lbl-long { display: none; }
+    .lbl-short { display: inline; }
+    #save-btn, #reset-btn { padding: 7px 10px 7px 8px; }
+  }
   #reset-btn:hover { background: rgba(255,255,255,0.35); }
   #reset-btn:active .reset-icon { transform: rotate(-90deg); }
   #reset-btn:active { transform: scale(0.95); }
@@ -423,7 +452,8 @@
       <div class="status"><span class="led"></span><span id="stage-text">최초 접속</span></div>
     </div>
     <button id="share-btn" title="학생 공유 링크 보기" onclick="showRoomInfo()" style="display:none;">🔗</button>
-    <button id="reset-btn" title="대화 초기화" onclick="resetAll()"><span class="reset-icon">🔄</span>대화 초기화</button>
+    <button id="save-btn" title="대화 저장하기 (탐구가 모두 끝나면 누를 수 있어요)" onclick="saveTranscript()" disabled><span class="save-icon">💾</span><span class="lbl-long">대화 저장하기</span><span class="lbl-short">저장</span></button>
+    <button id="reset-btn" title="대화 초기화" onclick="resetAll()"><span class="reset-icon">🔄</span><span class="lbl-long">대화 초기화</span><span class="lbl-short">초기화</span></button>
   </header>
   <div id="transcript"></div>
   <div id="inputzone"></div>
@@ -1644,6 +1674,14 @@ function pushUser(text) {
   log.push({ who: 'user', text, ts: Date.now() });
   renderLog();
 }
+// 저장 파일에만 들어가는 기록: 입력칸 위에만 잠깐 보이는 질문(사례의 탐구 질문 등)과 활동 구분 제목.
+// 화면의 대화에는 그리지 않는다(renderLog에서 건너뜀).
+function pushNote(text) {
+  log.push({ who: 'ai', text, exportOnly: true, ts: Date.now() });
+}
+function pushSection(title) {
+  log.push({ who: 'section', text: title, exportOnly: true, ts: Date.now() });
+}
 function pushThinking(id) {
   log.push({ who: 'thinking', text: '', id });
   renderLog();
@@ -1708,6 +1746,7 @@ function fmtTime(ts) {
 function renderLog() {
   transcriptEl.innerHTML = '';
   log.forEach((item, i) => {
+    if (item.exportOnly) return; // 저장 파일 전용 기록은 화면에 그리지 않는다
     const row = document.createElement('div');
     row.className = 'row ' + (item.who === 'user' ? 'user' : 'ai');
     if (item.who === 'thinking') {
@@ -1924,6 +1963,7 @@ function onStartClicked() {
 async function beginWithValue(name) {
   state.value = name;
   state.step = 'act1_intro';
+  pushSection('활동1. 다양한 사례로 탐구하기');
   const intro = `🌟 오늘 우리가 함께 탐구할 덕목은 [${name}]${hasBatchim(name) ? '이에요' : '예요'}!`;
   await sayAI(`${intro}
 
@@ -2063,6 +2103,7 @@ function pickMirrorReply() {
 }
 
 async function onCaseAnswer(v) {
+  pushNote('🤔 ' + CASE_TYPES[state.caseIdx].ask(state.value)); // 탐구 질문(저장 파일용)
   pushUser(v);
   setBusy(true);
   inputzoneEl.innerHTML = '';
@@ -2104,6 +2145,7 @@ async function onDef1Submit(v) {
 }
 
 function onAct2Start() {
+  pushSection('활동2. 관계 속에서 탐구 확장하기');
   pushUser('활동2 시작할게요');
   pushAI(`🌏 다양한 관계 속에서 [${state.value}]의 의미를 확장해 볼까요? 아래 중 하나를 골라보세요!`);
   setInputChips(contextList().map(c => ({ label: contextChipLabel(c.name), onClick: () => onContextPick(c.name) })));
@@ -2187,6 +2229,7 @@ async function onDef2Submit(v) {
 }
 
 function onAct3Start() {
+  pushSection('활동3. 가상 상황에서의 적용');
   pushUser('활동3 시작할게요');
   pushAI(`🤔 이제 내가 정리한 [${state.value}]의 뜻이 새로운 상황에 어울리는지 확인해 볼까요? 그 전에 하나만 물어볼게요 — 내가 정리한 [${state.value}]의 뜻이 모든 상황에서 딱 맞을 것 같나요?`);
   setInputChips([
@@ -2356,6 +2399,7 @@ function renderSituationJudgmentChoice() {
 }
 
 function onJudgmentChoice(label) {
+  pushNote(`🤔 내가 정리한 [${state.value}]의 뜻을 적용한 결과를 아래에서 골라보세요.`); // 저장 파일용
   pushUser(label);
   pushAI('✏️ 위와 같은 판단을 한 이유를 적어보세요.');
   setInputText('이유를 적어보세요', onJudgmentReasonSubmit);
@@ -2375,12 +2419,87 @@ async function onJudgmentReasonSubmit(v) {
 async function finishAct3() {
   await sayTodo('지금까지 저와 나눈 대화를 활동지 ⑧에 정리해 주세요.');
   await sayAI('🎉 지금부터는 스스로 해보는 시간이에요. 끝까지 최선을 다해 볼까요?🎉');
-  await sayAI('💾 대화 내용을 다시 보고 싶다면, 화면을 위로 올려보세요!');
+  await sayAI('💾 화면 위의 [대화 저장하기] 버튼을 눌러 지금까지의 대화를 파일로 저장하고, 선생님이 알려 주신 방법으로 공유해 보세요!');
   state.step = 'end';
+  if (stageTextEl) stageTextEl.textContent = STAGE_LABEL.end;
+  setSaveEnabled(true); // 마지막 안내까지 나온 뒤에 저장 버튼을 켠다
   inputzoneEl.innerHTML = '<div class="hint" style="text-align:center;padding:14px;">🙈 오늘의 탐구가 끝났어요. 스스로 정리하는 시간을 가져보세요!</div>';
 }
 
+// ---------- 대화 저장하기 ----------
+function setSaveEnabled(on) {
+  const b = document.getElementById('save-btn');
+  if (b) b.disabled = !on;
+}
+function two(n) { return String(n).padStart(2, '0'); }
+function fmtStamp(d) {
+  return `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())} ${two(d.getHours())}:${two(d.getMinutes())}`;
+}
+// 지금까지의 대화(log)를 글로 정리한다. 되돌리기로 지운 대화는 들어가지 않는다(화면에 남아 있는 대화와 같다).
+function buildTranscriptText() {
+  const line = '────────────────────────────────';
+  const out = [];
+  out.push('도덕 AI 도우미 대화 기록');
+  out.push(`탐구한 덕목: [${state.value}]`);
+  out.push(`저장한 때: ${fmtStamp(new Date())}`);
+  out.push(line);
+  out.push('[내가 정리한 뜻]');
+  out.push(`· 처음 정리한 뜻(활동1): ${state.def1 || '(없음)'}`);
+  out.push(`· 다시 정리한 뜻(활동2): ${state.def2 || '(없음)'}`);
+  out.push(line);
+  out.push('[대화]');
+  log.forEach(item => {
+    if (item.who === 'thinking' || item.typing) return;
+    const text = String(item.text || '').trim();
+    if (!text) return;
+    if (item.who === 'section') { out.push(''); out.push(`■ ${text}`); return; }
+    const time = item.ts ? `(${fmtTime(item.ts)}) ` : '';
+    if (item.who === 'user') { out.push(`${time}학생: ${text}`); return; }
+    if (item.box) { out.push(`${time}AI [${item.tag || '이야기'}]`); out.push(text); return; }
+    if (item.todo) { out.push(`${time}AI [활동지 안내]: ${text}`); return; }
+    out.push(`${time}AI: ${text}`);
+  });
+  out.push('');
+  out.push(line);
+  out.push('※ 이 파일은 학생 기기에만 저장되며, 서버에는 저장되지 않습니다.');
+  return out.join('\r\n');
+}
+async function saveTranscript() {
+  const btn = document.getElementById('save-btn');
+  if (!btn || btn.disabled || state.step !== 'end') return;
+  const d = new Date();
+  const filename = `도덕AI도우미_${state.value}_대화기록_${d.getFullYear()}${two(d.getMonth() + 1)}${two(d.getDate())}_${two(d.getHours())}${two(d.getMinutes())}.txt`;
+  const text = '\ufeff' + buildTranscriptText(); // 메모장에서 한글이 깨지지 않도록 표시(BOM)를 붙인다
+  let saved = false;
+  if (PREVIEW_MODE && window.claude) {
+    // 미리보기(claude.ai 안)에서는 claude.ai의 파일 저장 기능을 쓴다.
+    try {
+      const dl = await window.claude.use('downloads');
+      if (dl) { await dl.save({ filename, data: text }); saved = true; }
+    } catch (e) {
+      if (e && (e.code === 'declined' || e.code === 'rate_limited')) return; // 저장을 취소한 경우
+    }
+  }
+  if (!saved) {
+    try {
+      const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.style.display = 'none';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      saved = true;
+    } catch (e) {
+      console.error('대화 저장 실패:', e);
+    }
+  }
+  const long = btn.querySelector('.lbl-long'), short = btn.querySelector('.lbl-short');
+  const o1 = long.textContent, o2 = short.textContent;
+  long.textContent = saved ? '저장했어요!' : '저장 실패'; short.textContent = saved ? '완료' : '실패';
+  setTimeout(() => { long.textContent = o1; short.textContent = o2; }, 2000);
+}
+
 function resetAll() {
+  setSaveEnabled(false);
   Object.keys(state).forEach(k => { delete state[k]; });
   Object.assign(state, JSON.parse(JSON.stringify(INITIAL_STATE)));
   log = [];
