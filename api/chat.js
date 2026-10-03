@@ -5,6 +5,7 @@
 const { generate } = require('./_anthropic');
 const { findRedisConfig, redisEnvNames, MISSING_MESSAGE } = require('./_redis');
 const { findStrictPersonalInfo } = require('./_privacy');
+const { SERVER_ROOM_MARKER, serverKey, roomCallLimit } = require('./_serverkey');
 
 const MAX_PROMPT_CHARS = 12000; // 정상적인 수업 요청은 이보다 훨씬 짧다(방 코드를 이용한 남용 방지)
 const MAX_TOKENS = { default: 1024, quick: 300 };
@@ -55,6 +56,30 @@ module.exports = async function handler(req, res) {
   if (!apiKey) {
     res.status(404).json({ error: '이 방은 만료되었거나 존재하지 않아요. 선생님께 새 링크를 요청해 주세요.' });
     return;
+  }
+
+  // 서버 키로 만든 방: 저장소에는 표시만 있으므로, 실제 키는 환경변수에서 가져온다.
+  if (apiKey === SERVER_ROOM_MARKER) {
+    apiKey = serverKey();
+    if (!apiKey) {
+      res.status(500).json({ error: '서버에 AI 키가 설정되어 있지 않아요. 선생님께 알려 주세요. (관리자: Vercel 환경변수 ANTHROPIC_API_KEY 확인)' });
+      return;
+    }
+    // 방 하나에서 쓸 수 있는 호출 횟수를 제한한다(링크가 퍼졌을 때 운영자 크레딧이 한없이 쓰이지 않게).
+    try {
+      const code = String(roomCode).toUpperCase();
+      const incRes = await fetch(`${redisUrl}/incr/roomcount:${code}`, { headers: { Authorization: `Bearer ${redisToken}` } });
+      const count = Number(((await incRes.json()) || {}).result);
+      if (count === 1) {
+        fetch(`${redisUrl}/expire/roomcount:${code}/${60 * 60 * 48}`, { headers: { Authorization: `Bearer ${redisToken}` } }).catch(() => {});
+      }
+      if (Number.isFinite(count) && count > roomCallLimit()) {
+        res.status(429).json({ error: '이 방에서 쓸 수 있는 AI 사용 횟수를 모두 썼어요. 선생님께 알려 주세요. (선생님: 새 방을 만들어 새 링크를 나눠 주세요.)', code: 'room_limit' });
+        return;
+      }
+    } catch (e) {
+      console.error('방 사용 횟수 확인 실패(계속 진행):', e);
+    }
   }
 
   const result = await generate(apiKey, prompt, MAX_TOKENS[tier] || MAX_TOKENS.default);

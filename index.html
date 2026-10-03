@@ -367,16 +367,17 @@
     <div class="setup-emoji">🤖</div>
     <h2>도덕 AI 도우미</h2>
 
-    <div id="setup-step-key">
-      <p>선생님의 Claude API 키를 입력해 주세요.<br>이 키는 서버에만 저장되고, 학생에게는 노출되지 않아요.</p>
+    <div id="setup-step-key" style="visibility:hidden;">
+      <p id="setup-key-msg">선생님의 Claude API 키를 입력해 주세요.<br>이 키는 서버에만 저장되고, 학생에게는 노출되지 않아요.</p>
       <input id="setup-api-key" type="password" placeholder="Claude API 키 붙여넣기 (sk-ant-로 시작)">
+      <input id="setup-teacher-code" type="password" placeholder="교사 코드 입력" style="display:none;" autocomplete="off">
       <button id="setup-create-btn">방 만들기</button>
-      <p class="setup-hint">키가 없으신가요? <a href="https://platform.claude.com/docs/en/get-api-key" target="_blank" rel="noopener">Claude Console 키 발급 안내</a>를 참고해 주세요. 사용하려면 Console에서 크레딧(선불)을 먼저 충전해야 해요.</p>
+      <p class="setup-hint" id="setup-key-hint">키가 없으신가요? <a href="https://platform.claude.com/docs/en/get-api-key" target="_blank" rel="noopener">Claude Console 키 발급 안내</a>를 참고해 주세요. 사용하려면 Console에서 크레딧(선불)을 먼저 충전해야 해요.</p>
       <div id="setup-error" class="setup-error"></div>
     </div>
 
     <div id="setup-step-room" style="display:none;">
-      <p>✅ 방이 만들어졌어요! (48시간 동안 유효)</p>
+      <p id="room-created-msg">✅ 방이 만들어졌어요! (48시간 동안 유효)</p>
       <div class="lesson-settings">
         <div class="ls-title">📚 수업 설정</div>
         <label for="lesson-virtue">탐구할 덕목</label>
@@ -401,7 +402,7 @@
       <div class="room-link" id="room-link-display"></div>
       <button id="room-copy-btn" class="setup-secondary-btn">🔗 링크 복사</button>
       <button id="room-continue-btn">확인, 테스트해볼게요 →</button>
-      <p class="setup-hint" style="margin-top:10px;"><a href="#" id="room-restart-link">다른 API 키로 새로 시작하기</a></p>
+      <p class="setup-hint" id="room-restart-row" style="margin-top:10px;"><a href="#" id="room-restart-link">다른 API 키로 새로 시작하기</a></p>
     </div>
   </div>
 </div>
@@ -430,7 +431,7 @@
 
 <script>
 const STAGE_LABEL = {
-  landing: '최초 접속', act1_intro: '활동1 안내', act1_interest: '활동1 · 관심사',
+  landing: '최초 접속', act1_intro: '활동1 안내',
   act1_case: '활동1 · 사례', act1_def1: '활동1 · 정의', act2_menu: '활동2 · 맥락 선택',
   act2_situation: '활동2 · 상황', act2_def2: '활동2 · 정의', act3_q1: '활동3 · 생각해보기',
   act3_situation: '활동3 · 가상 상황', end: '종료'
@@ -438,7 +439,7 @@ const STAGE_LABEL = {
 
 const INITIAL_STATE = {
   step: 'landing',
-  value: '', interest: null,
+  value: '',
   def1: '', def2: '',
   caseIdx: 0, cases: [], caseEasedThisSlot: false, caseAnswerRejectCount: 0,
   context: '', situationEased: false, situationHistory: [],
@@ -452,40 +453,23 @@ const state = JSON.parse(JSON.stringify(INITIAL_STATE));
 const DEFAULT_PROMPTS = {
   "safetyRules": "[안전 규칙] 폭력·잔인한 묘사, 성적 내용, 공포·혐오, 특정 집단 비하, 불법행위 조장, 자살·학대, 정치적 편향, 게임 소재는 쓰지 않는다. 전쟁·테러·대형 참사 장면은 쓰지 않으며, 자연재해 같은 어려움은 배경으로 짧게만 언급하고 피해 장면을 묘사하지 않는다. 초등학생 인물이 현실에서 할 수 없는 일(예: 혼자 해외 모금 운동을 이끎)을 하는 설정, 작위적으로 완벽한 선인이나 악인은 쓰지 않는다. 초등 {{grade}}학년이 뉴스를 몰라도 이해할 수 있는 쉬운 수준으로 쓴다.",
   "commonChecks": [
-    "본문 외에 제목·해설·점검 과정·교훈 설명이 섞여 있거나, 5문장 이상으로 길다.",
+    "본문 외에 제목·해설·점검 과정·교훈 설명, 또는 사례 유형이나 개념 이름 표시(예: '개념: 동정심', '관련 사례:')가 섞여 있거나, 5문장 이상으로 길다.",
     "안전 규칙에 어긋나는 소재(폭력·잔인함, 성적 내용, 공포·혐오, 특정 집단 비하, 불법행위 조장, 자살·학대, 정치적 편향, 전쟁·대형 참사 장면, 게임)가 들어 있다.",
-    "초등 {{grade}}학년이 실제로 겪거나 쉽게 이해하기 어려운 비현실적인 상황이다.",
-    "관심사가 이야기를 지배하거나, 마음과 행동이 향하는 대상이 덕목의 정의에 맞지 않는다(예: 사람을 향해야 하는 덕목인데 동물만 향함).",
+    "주인공이 할 법하지 않은 규모의 일을 한다(예: 초등학생이 혼자 국제 지원 프로젝트를 이끎).",
+    "우연이 여러 번 겹치거나 사건이 과장되어 있을 법하지 않다.",
+    "이야기와 상관없는 도입 장면이 붙어 있거나, 주인공이 어떤 일을 알게 되는 계기가 억지스럽다(예: 강아지 영상을 보다가, 운동회 중 방송으로 다른 나라 지진 소식을 들음).",
+    "초등학생에게 낯선 장소·기관·시설이 나오거나, 그곳에서 흔히 열리지 않는 행사가 나온다(예: 외국인 노동자 쉼터에서 여는 축구 대회).",
+    "실제 사건처럼 날짜·숫자·단체 이름을 붙여 사실을 지어냈다.",
+    "초등 {{grade}}학년이 한 번 읽고 이해하기 어렵다(한 문장에 여러 사건을 길게 이어 붙인 문장 등).",
+    "마음과 행동이 향하는 대상이 덕목의 정의에 맞지 않는다(예: 사람을 향해야 하는 덕목인데 동물만 향함).",
     "인물의 생각이나 마음이 전혀 드러나지 않고 행동만 나열되어 있다.",
-    "이야기 안에서 교훈이나 정답, 덕목의 정의를 직접 말해준다."
+    "이야기 안에서 교훈이나 정답, 덕목의 정의를 직접 말해주거나, 서술자가 인물의 행동을 평가한다(예: '~하기보다는 그저 ~해 버렸다', '~한 것은 옳은 일이었다')."
   ],
-  "formatLine": "[작성 형식] 이야기 본문만 정확히 2~3문장으로 쓴다. 제목·설명·따옴표·점검 과정은 출력하지 않는다. 인물의 마음을 나타내는 말은 이 이야기의 상황에 맞게 새로 쓰고, 어디에나 붙일 수 있는 상투적인 문구는 쓰지 않는다.\n{{gradeStyle}}",
+  "realismLine": "[현실성 — 필수] 이야기가 꼭 학생의 일상일 필요는 없다. 학교·가정·동네의 일일 수도 있고, 사회나 국제사회의 일(예: 다른 나라에 큰 지진이 나자 여러 나라가 구호대와 구호 물품을 보낸 일)일 수도 있다. 기준은 '이 주인공이 이 규모의 일을 실제로 할 법한가'다.\n- 초등학생이 주인공이면, 초등학생이 실제로 할 수 있는 크기의 일만 하게 한다.\n- 나라·단체·어른이 할 일이면, 그 일을 실제로 하는 사람들(정부, 구호대, 의료진, 시민, 선생님 등)을 주인공으로 쓴다. 초등학생에게 어른 규모의 일을 시키지 않는다.\n- 실제 나라 이름은 써도 되지만, 실제로 있었던 특정 사건처럼 날짜·숫자·단체 이름을 붙여 사실을 지어내지 않는다.\n- 우연이 여러 번 겹치거나 사건을 과장한 설정, 인물이 교훈을 말하는 혼잣말은 쓰지 않는다.\n- 이야기와 상관없는 장면으로 시작하지 않는다. 첫 문장부터 덕목과 관련된 일이 벌어지게 쓴다. 먼 곳의 일은 그 일을 직접 하는 사람(구호대, 봉사자 등)을 주인공으로 쓰거나, 가족과 저녁 뉴스를 보는 것처럼 실제로 소식을 접하는 흔한 계기로 쓴다.\n- 장소·기관·행사는 초등학생이 이름만 듣고 바로 아는 흔한 것만 쓴다: 집, 학교(교실·운동장·급식실·도서실), 놀이터, 공원, 아파트, 동네 가게·시장·마트, 도서관, 행정복지센터(주민센터), 복지관, 병원, 버스·지하철, 학교 행사(운동회·학예회·현장체험학습), 동네 축제. 사회·국제의 일은 정부, 구호대, 의료진, 소방관처럼 누구나 아는 사람·기관을 쓴다. 학생에게 낯선 시설이나 기관, 그런 곳에서 흔히 열리지 않는 행사(예: 특정 시설에서 여는 축구 대회)는 쓰지 않는다.",
+  "formatLine": "[작성 형식] 이야기 본문만 정확히 2~3문장으로 쓴다. 한 문장은 짧게(50자 안팎) 쓰고, 한 문장에 사건을 여러 개 이어 붙이지 않는다. 제목·설명·따옴표·점검 과정, 사례 유형이나 개념 이름 표시(예: '개념: ○○')는 출력하지 않는다. 인물의 마음을 나타내는 말은 이 이야기의 상황에 맞게 새로 쓰고, 어디에나 붙일 수 있는 상투적인 문구는 쓰지 않는다.\n{{gradeStyle}}",
   "finalCheckIntro": "[최종 점검 — 출력하지 말고 속으로만 수행] 초안을 쓴 뒤, 아래 중 하나라도 해당하면 처음부터 다시 써라. 통과한 최종 이야기만 출력하라.",
   "avoidLineTemplate": "[앞 이야기와 겹치지 않기 — 필수] 아래는 지금까지 이 학생에게 보여준 이야기들이다. 장소, 사건의 종류(예: 길을 잃은 사람, 짐을 떨어뜨린 사람, 표를 못 사는 사람), 첫 문장을 여는 방식, 마음을 표현하는 문구가 겹치지 않게, 완전히 다른 장면으로 새 이야기를 써라. 등장인물 이름만 바꾸는 것은 새 이야기가 아니다.\n{{list}}",
   "easierLine": "[쉽게] 이전 이야기보다 더 짧은 문장과 쉬운 낱말로, 초등학생에게 익숙한 장면으로 써라. 단, 사례 유형(또는 이야기의 목적)은 그대로 지킨다.",
-  "interestLineWithInterest": "[관심사 — 필수] 이 학생의 관심사: \"{{interest}}\". 관심사가 등장하는 장소·상황·소품을 이야기의 배경으로 반드시 한 번 이상 넣는다(예: 요리라면 '요리 동아리 시간에', '가족과 저녁을 만들다가' / 운동이라면 '축구 경기가 끝난 뒤' / 동물이라면 '강아지와 산책하던 길에'). 관심사는 배경일 뿐이므로, [{{value}}]{{iGa}} 드러나는 사건과 인물의 마음은 관심사와 상관없이 현실적으로 쓰고, 마음과 행동이 향하는 대상은 덕목의 정의에 맞아야 한다(관심사가 그 대상을 대신하면 안 된다). 관심사를 억지로 사건의 중심에 두면 비현실적인 이야기가 되므로, 배경 한 구절로 자연스럽게 넣는다. 덕목 정보의 필수 범위(예: 다른 나라 사람과 관련된 상황)가 있으면 그 범위 안에서 관심사를 배경으로 쓴다.",
-  "interestLineWithout": "[관심사] 특별한 관심사 없이 초등학생에게 익숙한 일상 장면으로 쓴다.",
-  "interestCheck": "학생의 관심사(\"{{interest}}\")가 이야기의 배경·장소·소품으로 전혀 나오지 않는다.",
-  "interestExamplesTemplate": "아래 후보 목록 중에서 [{{value}}]{{waGwa}} 가장 자연스럽게 어울리는 6개를 골라라.\n\n후보 목록: {{pool}}\n\n기준: 이 단어를 배경·소재로 삼았을 때 [{{value}}]{{iGa}} 실제로 잘 드러나는 이야기를 만들 수 있는지를 보고 골라라. 이 후보 목록은 이미 사람과 사람 사이의 상호작용을 자연스럽게 끌어내기 쉬운 소재들로만 엄선되어 있으니, 그중에서도 [{{value}}]{{waGwa}} 특히 잘 어울리는 것을 우선하라.\n\n반드시 위 후보 목록 안에 있는 단어만 골라라. 목록에 없는 새 단어를 만들어내거나 변형하지 마라(예: '시장'을 '시장체험'으로 바꾸는 것 금지).\n\n쉼표로만 구분해서 6개를 출력하라. 다른 설명 없이 \"단어1, 단어2, 단어3, 단어4, 단어5, 단어6\" 형식만 출력하라.",
-  "interestPool": [
-    "동물",
-    "운동",
-    "음악",
-    "미술",
-    "만들기",
-    "요리",
-    "여행",
-    "동아리 활동"
-  ],
-  "noneWords": [
-    "없어",
-    "없음",
-    "없다",
-    "없습니다",
-    "모르겠",
-    "모름",
-    "몰라"
-  ],
   "caseTypeMap": "[네 가지 사례 유형 — 학생은 같은 덕목에 대해 네 유형을 차례로 보며 [{{value}}]의 경계를 탐구한다. 각 사례는 자기 유형으로만 읽혀야 하고 다른 유형과 헷갈리면 안 된다]\n- 전형적 사례: 누가 봐도 [{{value}}]{{ida}}.\n- 반대 사례: 누가 봐도 [{{value}}]{{iGa}} 아니다.\n- 관련 사례: [{{value}}]처럼 보이지만 실은 이름이 분명한 다른 개념이다.\n- 경계 사례: [{{value}}]{{ro}} 볼 점과 걸리는 점이 함께 있어 판단이 갈린다.",
   "caseTypes": {
     "model": {
@@ -514,13 +498,14 @@ const DEFAULT_PROMPTS = {
     "related": {
       "label": "관련 사례",
       "askTemplate": "이 이야기는 [{{value}}]{{waGwa}} 어떤 점이 같고, 어떤 점이 다른가요?",
-      "definition": "[이번에 만들 유형: 관련 사례] 겉보기엔 [{{value}}]{{waGwa}} 비슷한 행동이나 상황이지만, 실제로는 이름이 분명한 다른 개념의 전형적 예시인 사례. 먼저 [{{value}}]{{iGa}} 아닌 다른 개념을 하나 정하라(이 덕목과 헷갈리기 쉬운 개념: {{relatedConcepts}} — 목록 밖이어도 된다). 그다음 그 개념의 전형적 사례를 써라. 정한 개념의 이름은 이야기에 쓰지 않는다.",
+      "definition": "[이번에 만들 유형: 관련 사례] 겉보기엔 [{{value}}]{{waGwa}} 비슷한 행동이나 상황이지만, 실제로는 이름이 분명한 다른 개념의 전형적 예시인 사례. 먼저 [{{value}}]{{iGa}} 아닌 다른 개념을 하나 속으로 정하라(이 덕목과 헷갈리기 쉬운 개념: {{relatedConcepts}} — 목록 밖이어도 된다). 그다음 그 개념의 전형적 사례를 써라. 정한 개념의 이름은 이야기에도, 이야기 앞뒤에도 쓰지 않는다(예: '개념: 동정심' 같은 표시 금지 — 학생이 스스로 찾아야 할 답이다).\n관련 사례는 '잘못한 이야기'가 아니다. 그 개념을 나쁘게 평가하거나 더 나은 행동과 비교하지 말고(예: '함께 연습하기보다는 그저 불쌍한 마음에 대신 해 버렸다' 금지), 그 개념에서 나온 마음과 행동을 있는 그대로 보여 준다. 좋고 나쁨의 판단은 학생이 한다.",
       "mind": "[인물의 마음 — 필수] 인물의 행동이 정한 그 개념에서 나온 마음임을 드러내라(예: 의무감이라면 '맡은 일이니까 해야 한다는 생각에', 우정이라면 '가장 친한 친구라서'). [{{value}}]의 핵심이 되는 마음은 드러내지 않는다.",
       "failChecks": [
         "[{{value}}]{{iGa}} 아닌 다른 개념 이름을 뚜렷하게 붙일 수 없다.",
         "줄거리가 전형적인 [{{value}}] 사례와 사실상 같고, 마음을 나타내는 단어만 바뀌었다.",
         "읽고 나서 '이것도 [{{value}}] 아닌가?'라는 판단이 우세하다 → 전형 사례나 경계 사례로 읽힌다.",
-        "[{{value}}]{{waGwa}} 비슷해 보이는 행동이나 상황이 전혀 없어 비교할 거리가 없다."
+        "[{{value}}]{{waGwa}} 비슷해 보이는 행동이나 상황이 전혀 없어 비교할 거리가 없다.",
+        "이야기가 인물의 행동을 평가하거나 더 나은 행동과 비교한다(예: '함께 연습하기보다는 그저 불쌍한 마음에 대신 해 버렸다') → 다른 개념의 전형적 모습이 아니라 교훈이 담긴 반대 사례처럼 읽힌다."
       ]
     },
     "borderline": {
@@ -536,7 +521,7 @@ const DEFAULT_PROMPTS = {
       ]
     }
   },
-  "caseGenerationTemplate": "너는 초등 {{grade}}학년 도덕 수업용 사례를 만드는 작가다. 탐구 덕목은 [{{value}}]{{ida}}.\n\n{{virtueBlock}}\n\n{{typeMap}}\n\n{{typeDefinition}}\n\n{{typeMind}}\n\n{{interestLine}}\n{{easierLine}}\n{{avoidLine}}\n\n{{formatLine}}\n{{safetyRules}}\n\n{{finalCheckIntro}}\n{{checks}}",
+  "caseGenerationTemplate": "너는 초등 {{grade}}학년 도덕 수업용 사례를 만드는 작가다. 탐구 덕목은 [{{value}}]{{ida}}.\n\n{{virtueBlock}}\n\n{{typeMap}}\n\n{{typeDefinition}}\n\n{{typeMind}}\n\n{{easierLine}}\n{{avoidLine}}\n\n{{realismLine}}\n{{formatLine}}\n{{safetyRules}}\n\n{{finalCheckIntro}}\n{{checks}}",
   "situationContexts": {
     "친구": "또래 관계(놀이, 비밀, 편 나누기, 전학생, 친구 간 갈등 등)",
     "가족": "가족 역할 관계(집안일 분담, 아픈 가족, 의견 충돌, 용돈 등)",
@@ -546,7 +531,7 @@ const DEFAULT_PROMPTS = {
     "학교": "학급·학교생활(모둠 활동, 학급 역할, 학급 규칙, 학교 행사 등)",
     "자연": "자연·생명과의 관계(동물, 식물, 생태계, 환경 등)"
   },
-  "situationTemplate": "너는 초등 {{grade}}학년 도덕 수업용 이야기를 만드는 작가다. 탐구 덕목은 [{{value}}]{{ida}}.\n{{virtueBlock}}\n\n이 이야기는 학생이 [{{context}}] 관계 속에서 [{{value}}]의 의미를 넓혀 보도록 돕는다. 이 관계이기 때문에 [{{value}}]{{iGa}} 특별히 중요해지거나 어려워지는 지점을 보여주는 것이 목적이다.\n관계: {{context}} — {{contextDesc}}\n{{scopeLine}}\n\n[이야기 구성] (1) 누가 (2) 이 관계의 어떤 상황에서 (3) 왜 [{{value}}]{{iGa}} 중요한지 또는 어려운지가 드러나게 쓴다.\n[인물의 마음 — 필수] 이 관계에서 [{{value}}]{{eulReul}} 실천하려 할 때 인물이 느끼는 생각이나 망설임을 한 구절 드러내라. 인물이 결국 어떻게 했는지는 써도 되지만, 이야기 안에서 교훈을 말하지 않는다.\n[관계 현실성 — 필수] 그 관계의 사람들이 실제로 결정하거나 겪을 수 있는 일만 쓴다. 예를 들어 반려동물을 키울지는 가족이 정할 일이지 친구끼리 다툴 일이 아니고, 국가의 정책은 어린이 개인이 좌우할 수 없다.\n{{easierLine}}\n{{avoidLine}}\n\n{{formatLine}}\n{{safetyRules}}\n\n{{finalCheckIntro}}\n{{checks}}",
+  "situationTemplate": "너는 초등 {{grade}}학년 도덕 수업용 이야기를 만드는 작가다. 탐구 덕목은 [{{value}}]{{ida}}.\n{{virtueBlock}}\n\n이 이야기는 학생이 [{{context}}] 관계 속에서 [{{value}}]의 의미를 넓혀 보도록 돕는다. 이 관계이기 때문에 [{{value}}]{{iGa}} 특별히 중요해지거나 어려워지는 지점을 보여주는 것이 목적이다.\n관계: {{context}} — {{contextDesc}}\n{{scopeLine}}\n\n[이야기 구성] (1) 누가 (2) 이 관계의 어떤 상황에서 (3) 왜 [{{value}}]{{iGa}} 중요한지 또는 어려운지가 드러나게 쓴다.\n[인물의 마음 — 필수] 이 관계에서 [{{value}}]{{eulReul}} 실천하려 할 때 인물이 느끼는 생각이나 망설임을 한 구절 드러내라. 인물이 결국 어떻게 했는지는 써도 되지만, 이야기 안에서 교훈을 말하지 않는다.\n[관계 현실성 — 필수] 그 관계의 사람들이 실제로 결정하거나 겪을 수 있는 일만 쓴다. 예를 들어 반려동물을 키울지는 가족이 정할 일이지 친구끼리 다툴 일이 아니고, 국가의 정책은 어린이 개인이 좌우할 수 없다.\n{{easierLine}}\n{{avoidLine}}\n\n{{realismLine}}\n{{formatLine}}\n{{safetyRules}}\n\n{{finalCheckIntro}}\n{{checks}}",
   "situationChecks": [
     "이야기에서 [{{context}}] 관계(또는 상황)가 실제로 드러나지 않는다.",
     "그 관계의 사람들이 실제로 결정하거나 겪을 수 없는, 관계의 권한·역할 밖의 일이다(예: 반려동물을 키울지를 친구끼리 결정함).",
@@ -577,7 +562,7 @@ const DEFAULT_PROMPTS = {
   "internationalScopeLine": "[국제사회 맥락 — 필수] 서로 다른 나라 사이, 또는 서로 다른 나라 사람들 사이에서 [{{value}}]{{iGa}} 드러나는 상황으로 쓴다. 학생 한 명의 개인적인 이야기에 그치지 말고, 우리나라와 다른 나라의 관계나 여러 나라 사람이 함께 겪는 상황으로 구성하라. 분쟁의 정치적 원인이나 통계 수치는 언급하지 않는다.",
   "counterDirectionA": "방향A: 학생의 뜻(\"{{def2}}\")대로 하는 것이 맞아 보이지만 현실에서는 판단이 어려운 상황. 학생이 \"항상 맞다\"고 생각한 근거가 흔들리는 지점을 겨냥한다. 결말: 인물이 어떻게 할지 정하기 전, 판단이 갈리는 순간에서 끝낸다.",
   "counterDirectionB": "방향B: 학생의 뜻(\"{{def2}}\")대로 행동했더니 예상하지 못한 문제가 생기는 상황. 학생이 짐작한 예외보다 한 걸음 더 구체적인 지점을 겨냥한다. 결말: 뜻대로 행동한 뒤 생긴 문제까지 보여주고, 그 문제를 해결하거나 평가하지 않고 끝낸다.",
-  "counterTemplate": "너는 초등 {{grade}}학년 도덕 수업용 가상 상황을 만드는 작가다. 탐구 덕목은 [{{value}}]{{ida}}.\n{{virtueBlock}}\n\n학생이 정리한 [{{value}}]의 뜻: \"{{def2}}\"\n학생이 이 뜻에 대해 말한 이유: \"{{reasonText}}\"\n이 가상 상황의 목적은 학생이 자기 뜻을 다시 따져보게 하는 것이지, 정답을 알려주는 것이 아니다.\n\n[만드는 절차] (1) 학생의 뜻에 실제로 쓰인 핵심 조건어·한정어를 찾는다(예: '모든', '차별 없이', '대가 없이'처럼 학생이 실제로 쓴 단어). (2) 그 조건어가 지켜지기 어렵거나, 지켜도 문제가 생기는 지점을 찾는다. (3) 아래 방향에 맞춰 쓴다.\n{{directionDesc}}\n{{counterGradeStyle}}\n[인물의 마음 — 필수] 학생의 뜻대로 하려는 마음과, 그렇게 하기 어렵게 만드는 생각이 함께 드러나게 하라.\n{{avoidLine}}\n\n{{formatLine}}\n{{safetyRules}}\n\n{{finalCheckIntro}}\n{{checks}}",
+  "counterTemplate": "너는 초등 {{grade}}학년 도덕 수업용 가상 상황을 만드는 작가다. 탐구 덕목은 [{{value}}]{{ida}}.\n{{virtueBlock}}\n\n학생이 정리한 [{{value}}]의 뜻: \"{{def2}}\"\n학생이 이 뜻에 대해 말한 이유: \"{{reasonText}}\"\n이 가상 상황의 목적은 학생이 자기 뜻을 다시 따져보게 하는 것이지, 정답을 알려주는 것이 아니다.\n\n[만드는 절차] (1) 학생의 뜻에 실제로 쓰인 핵심 조건어·한정어를 찾는다(예: '모든', '차별 없이', '대가 없이'처럼 학생이 실제로 쓴 단어). (2) 그 조건어가 지켜지기 어렵거나, 지켜도 문제가 생기는 지점을 찾는다. (3) 아래 방향에 맞춰 쓴다.\n{{directionDesc}}\n{{counterGradeStyle}}\n[인물의 마음 — 필수] 학생의 뜻대로 하려는 마음과, 그렇게 하기 어렵게 만드는 생각이 함께 드러나게 하라.\n{{avoidLine}}\n\n{{realismLine}}\n{{formatLine}}\n{{safetyRules}}\n\n{{finalCheckIntro}}\n{{checks}}",
   "counterChecks": [
     "학생의 뜻에 실제로 쓰인 핵심 조건어를 겨냥하지 않고, 어떤 학생의 뜻에도 똑같이 쓸 수 있는 뻔한 상황이다.",
     "정해진 방향이나 결말 방식과 다르다."
@@ -1166,7 +1151,7 @@ const DEFAULT_PROMPTS = {
         "국가",
         "국제사회"
       ],
-      "scope": "[인류애 사례의 범위 — 필수] 지도서 정의상 인류애는 국경과 인종을 넘어 지구촌 타자를 향한다. 전형적·반대·경계 사례는 다른 나라 사람들(또는 다른 나라에서 온 사람들)과 관련된 상황이어야 한다. 관련 사례는 우리 주변 사람을 향한 다른 개념이어도 된다. 해외여행 중 외국인을 돕는 장면만 반복하지 말고, 우리 동네의 외국인 이웃, 다른 나라에서 온 친구, 다른 나라 소식을 접했을 때의 반응, 국제 교류 활동 등 다양한 장면을 활용하라.",
+      "scope": "[인류애 사례의 범위 — 필수] 지도서 정의상 인류애는 국경과 인종을 넘어 지구촌 타자를 향한다. 전형적·반대·경계 사례는 다른 나라 사람들(또는 다른 나라에서 온 사람들)과 관련된 상황이어야 한다. 관련 사례는 우리 주변 사람을 향한 다른 개념이어도 된다. 장면은 아래처럼 흔한 것에서 고르고, 사례마다 서로 다른 장면을 쓴다.\n- 다른 나라에 지진·홍수 같은 큰 재해가 나자, 우리나라와 여러 나라가 구호대·의료진·구호 물품을 보낸 일\n- 가족과 저녁 뉴스를 보다가 다른 나라 어린이들이 깨끗한 물을 마시지 못하거나 학교에 가지 못한다는 소식을 알게 된 일\n- 학교에서 어려운 나라 어린이를 돕는 모금·물품 모으기에 참여하는 일(저금통, 학용품 모으기 등)\n- 다른 나라에서 온 전학생·반 친구와 함께 지내는 학교생활(말이 서툴러 도움이 필요할 때, 생김새나 말투로 놀림을 받을 때 등)\n- 길을 묻는 외국인 관광객을 만난 일\n위 장면에 없는 시설·단체·행사를 새로 만들어 넣지 않는다. 전쟁 장면은 쓰지 않는다.",
       "notes": "",
       "extraFailChecks": {}
     }
@@ -1335,8 +1320,12 @@ function screenStudentInput(text) {
 // 입력창의 보내기 직전에 쓰는 공통 확인. 걸리면 안내만 보여주고 false를 돌려준다(글은 입력창에 남아 있음).
 let lastScreenWarnAt = 0;
 function passesInputScreen(v) {
-  const r = screenStudentInput(v);
-  if (r.ok) return true;
+  let r = screenStudentInput(v);
+  if (r.ok) {
+    const kind = meaninglessKind(v);
+    if (!kind) { meaninglessStreak = 0; return true; }
+    r = { ok: false, kind: 'meaningless', message: meaninglessMessage(kind) };
+  }
   const now = Date.now();
   if (now - lastScreenWarnAt > 400) pushAI(r.message); // 연속으로 눌러도 안내가 여러 번 쌓이지 않게
   lastScreenWarnAt = now;
@@ -1344,17 +1333,35 @@ function passesInputScreen(v) {
   return false;
 }
 
-// 활동1 사례 답변 검증: AI 판정 대신, 명백히 의미 없는 답변만 규칙 기반으로 걸러낸다.
-// (짧아도 뜻이 통하는 답까지 AI가 자꾸 부적절로 오판하던 문제를 근본적으로 없애기 위함)
-const JUNK_ANSWERS = ['몰라요', '모름', '모르겠어요', '모르겠음', 'ㅇㅇ', 'ㄴㄴ', 'ㅁㄹ', '글쎄', '글쎄요', '그냥', '없음', '없어요', '패스'];
-function isObviouslyInadequate(answer) {
-  const trimmed = (answer || '').trim();
-  if (!trimmed) return true;
-  // 숫자만 입력(뒤에 "번", "개", 마침표·느낌표 정도만 붙은 경우까지 포함 — 예: "2", "2번", "2.")
-  if (/^\d{1,2}(번|개)?[.!]?$/.test(trimmed)) return true;
-  if (trimmed.replace(/\s/g, '').length <= 1) return true; // 한 글자짜리
-  if (JUNK_ANSWERS.includes(trimmed)) return true; // 상투적인 무의미 답변
-  return false;
+// 의미 없는 답 거르기 — 학생이 글을 쓰는 모든 칸(활동1 사례 답·뜻 정리, 활동2 뜻 다시 정리, 활동3 답·이유)에 똑같이 적용한다.
+// AI 판정이 아니라 규칙으로만 거른다: 짧아도 뜻이 통하는 답을 AI가 오판해 막던 문제를 피하기 위함.
+// 그래서 "누가 봐도 생각이 담기지 않은 입력"만 막고, 문장으로 쓴 답은 내용과 상관없이 통과시킨다.
+const UNSURE_ANSWERS = ['몰라', '몰라요', '모름', '모르겠다', '모르겠어', '모르겠어요', '모르겠음', '모르겠는데', '몰루', '글쎄', '글쎄요'];
+const JUNK_ANSWERS = ['그냥', '그냥요', '없음', '없어', '없어요', '없다', '없는데', '패스', '아무거나', '네', '넵', '넹', '응', '웅', '예', '아니', '아니요', '아뇨', '헐', '대박', '좋아', '싫어', '그래', '그래요'];
+function meaninglessKind(answer) {
+  const t = String(answer || '').trim();
+  const compact = t.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9]/g, '');
+  if (!compact) return 'junk';                                  // 기호·공백뿐 (..., ???)
+  const syll = compact.replace(/[^가-힣]/g, '');                 // 완성된 한글 글자만
+  const latinWords = (t.match(/[A-Za-z]{2,}/g) || []).length;
+  if (!syll && latinWords < 2) return 'junk';                    // 숫자(123), 자음·모음(ㅋㅋ, ㅁㄴㅇㄹ), 자판 두드리기(asdf)
+  if (syll) {
+    if (UNSURE_ANSWERS.includes(syll)) return 'unsure';          // "몰라요", "ㅋㅋ 모르겠음"
+    if (JUNK_ANSWERS.includes(syll)) return 'junk';              // "그냥", "네", "없어요"
+    if (syll.length <= 1) return 'junk';                         // 한 글자 (+숫자·기호)
+    if (new Set(syll).size === 1) return 'junk';                 // 같은 글자 반복(하하하, 아아아)
+    if ('가나다라마바사아자차카타파하'.includes(syll) && syll.length >= 3) return 'junk'; // 가나다라…
+  }
+  return null;
+}
+function isObviouslyInadequate(answer) { return meaninglessKind(answer) !== null; }
+let meaninglessStreak = 0; // 연달아 막힌 횟수(3번째부터 선생님 도움 안내를 덧붙인다)
+function meaninglessMessage(kind) {
+  meaninglessStreak++;
+  const base = kind === 'unsure'
+    ? '🤔 잘 모르겠어도 괜찮아요! 어떤 부분이 헷갈리는지, 조금이라도 떠오르는 생각을 한 문장으로 써 볼까요?'
+    : '🤔 이 답으로는 생각을 알기 어려워요. 떠오른 생각을 문장으로 조금 더 자세히 써 줄래요?';
+  return meaninglessStreak >= 3 ? base + '\n\n✋ 어렵다면 손을 들어 선생님께 도움을 요청해도 좋아요.' : base;
 }
 // 활동1 사례 박스 상단에 표시할, 사례 유형별 태그 문구.
 function caseTag(typeKey, value) {
@@ -1393,15 +1400,13 @@ function kindChecks(spec) {
   // 덕목 프로필에 그 덕목에만 해당하는 실패 조건이 있으면 덧붙인다(예: 효의 지도상 유의점).
   const p = currentProfile();
   const extra = (p && p.extraFailChecks && p.extraFailChecks[spec.kind]) || [];
-  // 활동1에서 학생이 관심사를 골랐다면, 그 관심사가 배경으로 들어갔는지도 확인한다.
-  const interest = spec.interest && PROMPTS.interestCheck ? [PROMPTS.interestCheck] : [];
-  return [...base, ...extra, ...interest];
+  return [...base, ...extra];
 }
 function bulletList(items, vars) {
   return items.map(t => '- ' + fillTemplate(t, vars)).join('\n');
 }
 function checkVars(spec) {
-  return { value: spec.value, context: spec.context || '', def2: spec.def2 || '', interest: spec.interest || '' };
+  return { value: spec.value, context: spec.context || '', def2: spec.def2 || '' };
 }
 function allChecks(spec) {
   const vars = checkVars(spec);
@@ -1411,22 +1416,22 @@ function sharedParts(value, priorSummaries, easier) {
   return {
     avoidLine: avoidLine(priorSummaries),
     easierLine: easier ? fillTemplate(PROMPTS.easierLine) : '',
+    realismLine: fillTemplate(PROMPTS.realismLine || ''),
     formatLine: fillTemplate(PROMPTS.formatLine),
     safetyRules: fillTemplate(PROMPTS.safetyRules),
     finalCheckIntro: fillTemplate(PROMPTS.finalCheckIntro),
   };
 }
 
-function caseTypePrompt(type, value, interest, priorSummaries, easier) {
+function caseTypePrompt(type, value, priorSummaries, easier) {
   const t = PROMPTS.caseTypes[type];
   return fillTemplate(PROMPTS.caseGenerationTemplate, {
     value,
     typeMap: fillTemplate(PROMPTS.caseTypeMap, { value }),
     typeDefinition: fillTemplate(t.definition, { value }),
     typeMind: fillTemplate(t.mind, { value }),
-    interestLine: interest ? fillTemplate(PROMPTS.interestLineWithInterest, { interest }) : PROMPTS.interestLineWithout,
     ...sharedParts(value, priorSummaries, easier),
-    checks: allChecks({ kind: type, value, interest }),
+    checks: allChecks({ kind: type, value }),
   });
 }
 
@@ -1463,9 +1468,6 @@ function counterPrompt(value, def2, direction, reasonText, priorSummaries) {
   });
 }
 
-function interestExamplesPrompt(value) {
-  return fillTemplate(PROMPTS.interestExamplesTemplate, { value, pool: PROMPTS.interestPool.join(', ') });
-}
 
 
 // ---------- 사례 검수(판정 AI) ----------
@@ -1508,29 +1510,98 @@ async function judgeStory(story, spec) {
   }
 }
 
+// ---------- 규칙 검사(AI 판정 전에, 확실한 문제만 코드로 잡는다) ----------
+// AI 판정은 "확신이 없으면 통과"라 놓치는 경우가 있다. 아래처럼 글자만 보고 확실히 알 수 있는 문제는
+// 코드로 먼저 걸러, 판정 AI의 실수와 상관없이 학생 화면에 나가지 않게 한다.
+const META_LABEL = /^\s*[\[(【<]?\s*(?:정한\s*개념|다른\s*개념|개념|관련\s*사례|전형적\s*사례|반대\s*사례|경계\s*사례|사례\s*유형|유형|제목|덕목|최종\s*이야기|최종|이야기|본문)\s*[\])】>]?\s*[:：]\s*/;
+const META_ONLY_LINE = /^[\[(【<]\s*(?:정한\s*개념|다른\s*개념|개념|관련\s*사례|전형적\s*사례|반대\s*사례|경계\s*사례|사례\s*유형|유형|제목|이야기|본문)[^\])】>]{0,15}[\])】>]$/;
+const ACT1_KINDS = ['model', 'contrary', 'related', 'borderline'];
+
+// 이야기 앞뒤에 붙은 표시(예: "개념: 동정심", "이야기:", 따옴표)를 떼어 낸다.
+function cleanStory(raw) {
+  let lines = String(raw || '').replace(/\r/g, '').replace(/\*\*|__|^#+\s*/gm, '')
+    .split('\n').map(s => s.trim()).filter(Boolean);
+  lines = lines.flatMap(line => {
+    if (META_ONLY_LINE.test(line)) return []; // "[관련 사례]", "(개념)"처럼 괄호 표시만 있는 줄
+    const m = line.match(META_LABEL);
+    if (!m) return [line];
+    const rest = line.slice(m[0].length).trim();
+    // "개념: 동정심"처럼 표시만 있는 줄은 통째로 버리고, "이야기: 본문…"처럼 본문이 이어지면 표시만 뗀다.
+    return rest.length <= 12 && !/[.!?。]$/.test(rest) ? [] : [rest];
+  });
+  return lines.join(' ').replace(/^["'“‘「]+|["'”’」]+$/g, '').replace(/\s{2,}/g, ' ').trim();
+}
+
+function conceptNames(spec) {
+  return String(templateGlobals().relatedConcepts || '').split(/[,，]/).map(s => s.trim()).filter(s => s.length >= 2);
+}
+
+// 확실한 문제가 있으면 이유(문장)를, 없으면 null을 돌려준다.
+function ruleCheckStory(story, spec) {
+  const t = String(story || '');
+  if (/(?:관련|전형적|반대|경계)\s*사례|사례\s*유형|정한\s*개념|개념\s*[:：]/.test(t)) {
+    return '이야기 본문에 사례 유형이나 개념 이름 같은 표시가 섞여 있다(정답을 알려 주게 된다).';
+  }
+  if (ACT1_KINDS.includes(spec.kind)) {
+    const v = String(spec.value || '').trim();
+    if (v.length >= 2 && t.includes(v)) return `탐구 덕목 이름("${v}")을 이야기에 직접 썼다(학생이 스스로 찾아야 한다).`;
+    // 서술자가 더 나은 행동과 비교하거나 옳고 그름을 판정하는 문장(학생이 할 판단을 이야기가 대신함)
+    if (/기\s*보다는/.test(t)) return "서술자가 '~하기보다는'처럼 더 나은 행동과 비교해 인물의 행동을 평가했다(판단은 학생이 해야 한다).";
+    if (/(?:옳은|바람직한|바람직하지\s*않은|올바른|잘못된|잘한)\s*(?:일|행동|선택|태도)(?:이었|였|이다|이야|이라)/.test(t)) return '서술자가 인물의 행동이 옳은지 그른지 직접 판정했다(판단은 학생이 해야 한다).';
+    if (spec.kind === 'related') {
+      const hit = conceptNames(spec).find(c => t.includes(c));
+      if (hit) return `관련 사례에서 정한 개념 이름("${hit}")을 이야기에 직접 썼다(학생이 스스로 찾아야 한다).`;
+    }
+  }
+  return null;
+}
+
 async function generateVerified(basePrompt, spec) {
-  let draft = '', verdict = null;
-  for (let attempt = 1; attempt <= MAX_GEN_ATTEMPTS; attempt++) {
+  let draft = '', verdict = null, maxAttempts = MAX_GEN_ATTEMPTS;
+  let bestRulePassed = ''; // 규칙 검사는 통과한 초안(AI 판정만 탈락) — 모두 탈락할 때 이것을 우선 쓴다.
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const prompt = attempt === 1
       ? basePrompt
       : basePrompt + fillTemplate(PROMPTS.retryFeedbackTemplate, { reason: verdict.reason, draft });
-    draft = await ask(prompt); // 생성 자체의 실패(네트워크 등)는 호출한 쪽에서 처리한다.
-    verdict = await judgeStory(draft, spec);
+    draft = cleanStory(await ask(prompt)); // 생성 자체의 실패(네트워크 등)는 호출한 쪽에서 처리한다.
+    const ruleReason = ruleCheckStory(draft, spec);
+    if (ruleReason) {
+      verdict = { pass: false, reason: ruleReason, byRule: true };
+      maxAttempts = Math.max(maxAttempts, MAX_GEN_ATTEMPTS + 1); // 확실한 문제는 한 번 더 기회를 준다.
+    } else {
+      bestRulePassed = draft;
+      verdict = await judgeStory(draft, spec);
+    }
     // 교사가 브라우저 개발자 도구(F12 → Console)에서 검수 과정을 확인할 수 있게 남긴다.
     console.info(`[사례 검수] ${spec.kind} ${attempt}차: ${verdict.pass ? '통과' : '탈락 — ' + verdict.reason}`
+      + (verdict.byRule ? ' (규칙 검사)' : '')
       + (verdict.skipped ? ' (판정 호출 실패로 통과 처리)' : '') + (verdict.unreadable ? ' (판정 형식 오류로 통과 처리)' : ''));
     if (verdict.pass) return draft;
   }
-  // 재생성까지 탈락하면, 탈락 사유를 반영해 다시 쓴 마지막 초안을 사용한다.
-  console.warn(`[사례 검수] ${spec.kind}: 재생성 후에도 탈락 — 마지막 초안을 그대로 사용합니다.`);
-  return draft;
+  // 재생성까지 탈락하면, 규칙 검사를 통과한 가장 최근 초안을 쓴다(없으면 마지막 초안).
+  console.warn(`[사례 검수] ${spec.kind}: 재생성 후에도 탈락 — ${bestRulePassed ? '규칙 검사를 통과한 초안' : '마지막 초안'}을 사용합니다.`);
+  return bestRulePassed || draft;
 }
 
 // 방 코드(교사가 만들거나, 학생이 링크로 전달받은 값)를 통해 서버(/api/chat)를 거쳐
 // AI를 호출한다. 실제 API 키는 서버에만 있고 이 브라우저에는 전혀 내려오지 않는다.
 let ROOM_CODE = null;
 
+// ---------- 미리보기 모드 ----------
+// claude.ai 안에서 바로 확인하는 미리보기 파일(preview.html)에서만 true로 바뀐다(배포용 index.html은 항상 false).
+// 미리보기에서는 서버(/api/chat) 대신 claude.ai가 제공하는 AI 호출 기능을 쓰고, 방 만들기·API 키가 필요 없다.
+const PREVIEW_MODE = false;
+const PREVIEW_SAFETY_PREFIX = '[지켜야 할 기본 규칙] 너는 한국 초등학교(3~6학년) 도덕 수업에서 쓰이는 "도덕 AI 도우미"의 이야기·질문 작성기다. 이 서비스를 보는 사람은 어린이다. 어린이에게 안전하고 알맞은 내용만 쓰고, 개인정보를 묻거나 지어내지 않으며, 사람인 척하지 않는다. 아래 요청에 따라 요청한 결과물만 출력한다.\n\n';
+let previewSample = null;
+async function askPreview(prompt, tier) {
+  if (!previewSample) previewSample = await window.claude.use('sample');
+  if (!previewSample) throw new Error('이 화면에서는 AI 호출을 쓸 수 없어요.');
+  const r = await previewSample(PREVIEW_SAFETY_PREFIX + prompt, { modelTier: tier === 'quick' ? 'quick' : 'default', cache: false });
+  return ((r && r.text) || '').trim();
+}
+
 async function ask(prompt, tier = 'default') {
+  if (PREVIEW_MODE) return askPreview(prompt, tier);
   if (!ROOM_CODE) throw new Error('방 코드가 없습니다.');
   const res = await fetch('/api/chat', {
     method: 'POST',
@@ -1866,40 +1937,6 @@ async function beginWithValue(name) {
 
 function onCaseRequest() {
   pushUser('다 썼어요, 사례 보여주세요');
-  state.step = 'act1_interest';
-  askInterestExamples();
-}
-
-async function askInterestExamples() {
-  setBusy(true);
-  const tid = 't' + Date.now();
-  pushThinking(tid);
-  let examples = ['동물', '운동', '음악', '미술', '요리', '여행'];
-  try {
-    const text = await ask(interestExamplesPrompt(state.value), 'default');
-    const parts = text.split(',').map(s => s.trim()).filter(Boolean);
-    const clean = parts.filter(p => PROMPTS.interestPool.includes(p));
-    if (clean.length >= 4) examples = clean.slice(0, 6);
-  } catch (e) { /* fall back to defaults */ }
-  popThinking(tid);
-  setBusy(false);
-  pushAI(`🎯 여러분에게 좀 더 와닿는 사례를 제공하기 위해 한 가지만 물어볼게요!
-
-❓평소에 어떤 분야에 관심이 있나요? 아래 중에서 골라주세요!`);
-  const chips = examples.map(ex => ({ label: ex, onClick: () => onInterestPick(ex) }));
-  chips.push({ label: '없어요', variant: 'secondary', onClick: () => onInterestPick('없어요') });
-  setInputChips(chips);
-}
-
-function onInterestPick(v) {
-  pushUser(v);
-  const isNone = PROMPTS.noneWords.some(w => v.includes(w));
-  if (isNone) {
-    state.interest = null;
-    pushAI('알겠어요! 그럼 다양한 일상 사례로 시작해볼게요 😊');
-  } else {
-    state.interest = v;
-  }
   beginCases();
 }
 
@@ -1916,13 +1953,13 @@ function beginCases() {
 function planCase(idx, easier) {
   const type = CASE_TYPES[idx];
   const priorSummaries = state.cases.map(c => summarize(c.text));
-  const key = JSON.stringify([idx, easier, state.value, state.interest, priorSummaries]);
+  const key = JSON.stringify([idx, easier, state.value, priorSummaries]);
   return { idx, type, easier, priorSummaries, key };
 }
 
 function produceCase(plan) {
-  const p = caseTypePrompt(plan.type.key, state.value, state.interest, plan.priorSummaries, plan.easier);
-  return generateVerified(p, { kind: plan.type.key, value: state.value, interest: state.interest });
+  const p = caseTypePrompt(plan.type.key, state.value, plan.priorSummaries, plan.easier);
+  return generateVerified(p, { kind: plan.type.key, value: state.value });
 }
 
 // 학생이 지금 사례를 읽고 답을 쓰는 동안 다음 사례를 미리 만들고 검수해 둔다.
@@ -2030,17 +2067,7 @@ async function onCaseAnswer(v) {
   setBusy(true);
   inputzoneEl.innerHTML = '';
 
-  // 이 검증은 AI 판단이 아니라 명백한 무의미 입력(숫자만, 한 글자, 상투어)만 규칙으로 걸러내는 것이라
-  // 오탐(정상 답을 잘못 막는) 위험이 없다. 그래서 "1회 제한" 같은 예외 없이 몇 번이든 항상 적용한다.
-  const adequate = !isObviouslyInadequate(v);
-
-  if (!adequate) {
-    setBusy(false);
-    state.caseAnswerRejectCount++;
-    pushAI('🤔 조금 더 자세히 생각을 들려줄 수 있을까요? 왜 그렇게 느꼈는지 궁금해요!');
-    renderCaseInputArea();
-    return;
-  }
+  // 의미 없는 답은 보내기 전에 passesInputScreen에서 이미 걸러졌다(입력창에 글이 남아 고칠 수 있음).
 
   setBusy(false);
   pushAI(pickMirrorReply());
@@ -2491,6 +2518,7 @@ function refreshShareLink() {
   const hint = document.getElementById('lesson-share-hint');
   document.getElementById('room-copy-btn').disabled = !ready;
   document.getElementById('room-continue-btn').disabled = !ready;
+  if (PREVIEW_MODE) return; // 미리보기: 학생 링크·QR을 만들지 않는다
   if (!ready) {
     qr.style.display = 'none';
     linkEl.style.display = 'none';
@@ -2527,7 +2555,14 @@ function updateDeployUrlWarning() {
 }
 
 function showRoomInfo() {
-  updateDeployUrlWarning();
+  if (PREVIEW_MODE) {
+    ['room-qr', 'room-link-display', 'room-copy-btn', 'room-restart-row', 'lesson-share-hint', 'deploy-url-warning']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    document.getElementById('room-created-msg').textContent = '🧪 미리보기 — 덕목을 고르고 시작해 보세요. 학생 링크 없이 이 화면에서 바로 확인해요.';
+    document.getElementById('room-continue-btn').textContent = '미리보기 시작 →';
+  } else {
+    updateDeployUrlWarning();
+  }
   document.getElementById('setup-step-key').style.display = 'none';
   document.getElementById('setup-step-room').style.display = 'block';
   renderLessonControls();
@@ -2544,7 +2579,32 @@ function showShareButton() {
   if (shareBtn) shareBtn.style.display = 'flex';
 }
 
-async function createRoom(apiKey) {
+// 서버 설정: 서버(Vercel 환경변수)에 운영자 API 키가 들어 있으면 교사는 키를 입력하지 않는다.
+// 서버가 이 정보를 주지 않으면(예전 서버, 접속 실패) 기존처럼 교사가 키를 입력하는 화면을 쓴다.
+const SERVER_CONFIG = { serverKey: false, needCode: false };
+async function loadServerConfig() {
+  try {
+    const res = await fetch('/api/config', { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    SERVER_CONFIG.serverKey = !!data.serverKey;
+    SERVER_CONFIG.needCode = !!data.needCode;
+  } catch (e) { /* 기존 방식(키 입력) 유지 */ }
+}
+function applyServerConfigToSetup() {
+  if (!SERVER_CONFIG.serverKey) return;
+  document.getElementById('setup-key-msg').innerHTML = SERVER_CONFIG.needCode
+    ? '교사 코드를 입력하고 수업 방을 만들어 주세요.<br>API 키는 필요 없어요.'
+    : '수업 방을 만들어 주세요.<br>API 키는 필요 없어요.';
+  document.getElementById('setup-api-key').style.display = 'none';
+  document.getElementById('setup-key-hint').style.display = 'none';
+  document.getElementById('setup-teacher-code').style.display = SERVER_CONFIG.needCode ? '' : 'none';
+  document.getElementById('setup-create-btn').textContent = '수업 방 만들기';
+  const restart = document.getElementById('room-restart-link');
+  if (restart) restart.textContent = '새 방 만들기';
+}
+
+async function createRoom(payload) {
   const errEl = document.getElementById('setup-error');
   const btn = document.getElementById('setup-create-btn');
   errEl.textContent = '';
@@ -2554,7 +2614,7 @@ async function createRoom(apiKey) {
     const res = await fetch('/api/create-room', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ apiKey }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -2569,19 +2629,31 @@ async function createRoom(apiKey) {
     errEl.textContent = '⚠️ ' + e.message;
   } finally {
     btn.disabled = false;
-    btn.textContent = '방 만들기';
+    btn.textContent = SERVER_CONFIG.serverKey ? '수업 방 만들기' : '방 만들기';
   }
 }
 
 function wireSetupScreen() {
   document.getElementById('setup-create-btn').onclick = () => {
+    if (SERVER_CONFIG.serverKey) {
+      const code = document.getElementById('setup-teacher-code').value.trim();
+      if (SERVER_CONFIG.needCode && !code) {
+        document.getElementById('setup-error').textContent = '⚠️ 교사 코드를 입력해 주세요.';
+        return;
+      }
+      createRoom({ teacherCode: code });
+      return;
+    }
     const key = document.getElementById('setup-api-key').value.trim();
     if (!key) {
       document.getElementById('setup-error').textContent = '⚠️ API 키를 입력해 주세요.';
       return;
     }
-    createRoom(key);
+    createRoom({ apiKey: key });
   };
+  document.getElementById('setup-teacher-code').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('setup-create-btn').click();
+  });
   document.getElementById('room-copy-btn').onclick = () => {
     if (!lessonReady()) return;
     const link = buildShareUrl(ROOM_CODE);
@@ -2608,6 +2680,7 @@ function wireSetupScreen() {
     localStorage.removeItem('moral_explorer_room');
     ROOM_CODE = null;
     document.getElementById('setup-api-key').value = '';
+    document.getElementById('setup-teacher-code').value = '';
     document.getElementById('setup-error').textContent = '';
     document.getElementById('setup-step-room').style.display = 'none';
     document.getElementById('setup-step-key').style.display = 'block';
@@ -2619,6 +2692,13 @@ function wireSetupScreen() {
   await loadPrompts();
   populateVirtueSelect();
   wireSetupScreen();
+
+  if (PREVIEW_MODE) {
+    ROOM_CODE = 'PREVIEW';
+    loadSavedLesson();
+    showRoomInfo();
+    return;
+  }
 
   const urlParams = new URLSearchParams(window.location.search);
   const roomFromUrl = urlParams.get('room');
@@ -2639,6 +2719,9 @@ function wireSetupScreen() {
   }
 
   loadSavedLesson(); // 교사: 전에 골라둔 수업 설정을 그대로 불러온다
+  await loadServerConfig();
+  applyServerConfigToSetup();
+  document.getElementById('setup-step-key').style.visibility = 'visible'; // 서버 설정을 확인한 뒤에 보여 준다(화면 깜빡임 방지)
   const savedRoom = localStorage.getItem('moral_explorer_room');
   if (savedRoom) {
     // 이전에 방을 만들어둔 선생님이 돌아온 경우: 바로 이어서 쓸 수 있게 하고, 공유 버튼도 보여준다.
@@ -2654,7 +2737,7 @@ function wireSetupScreen() {
     return;
   }
 
-  // 처음 접속: API 키 입력 화면을 그대로 둔다(#setup-overlay는 기본으로 표시되어 있음).
+  // 처음 접속: 방 만들기 화면(API 키 입력 또는 서버 키 모드의 교사 코드 입력)을 그대로 둔다(#setup-overlay는 기본으로 표시되어 있음).
 })();
 </script>
 </body>
