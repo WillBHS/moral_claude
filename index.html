@@ -496,7 +496,7 @@ const DEFAULT_PROMPTS = {
     "이야기 안에서 교훈이나 정답, 덕목의 정의를 직접 말해주거나, 서술자가 인물의 행동을 평가한다(예: '~하기보다는 그저 ~해 버렸다', '~한 것은 옳은 일이었다')."
   ],
   "realismLine": "[현실성 — 필수] 이야기가 꼭 학생의 일상일 필요는 없다. 학교·가정·동네의 일일 수도 있고, 사회나 국제사회의 일(예: 다른 나라에 큰 지진이 나자 여러 나라가 구호대와 구호 물품을 보낸 일)일 수도 있다. 기준은 '이 주인공이 이 규모의 일을 실제로 할 법한가'다.\n- 초등학생이 주인공이면, 초등학생이 실제로 할 수 있는 크기의 일만 하게 한다.\n- 나라·단체·어른이 할 일이면, 그 일을 실제로 하는 사람들(정부, 구호대, 의료진, 시민, 선생님 등)을 주인공으로 쓴다. 초등학생에게 어른 규모의 일을 시키지 않는다.\n- 실제 나라 이름은 써도 되지만, 실제로 있었던 특정 사건처럼 날짜·숫자·단체 이름을 붙여 사실을 지어내지 않는다.\n- 우연이 여러 번 겹치거나 사건을 과장한 설정, 인물이 교훈을 말하는 혼잣말은 쓰지 않는다.\n- 이야기와 상관없는 장면으로 시작하지 않는다. 첫 문장부터 덕목과 관련된 일이 벌어지게 쓴다. 먼 곳의 일은 그 일을 직접 하는 사람(구호대, 봉사자 등)을 주인공으로 쓰거나, 가족과 저녁 뉴스를 보는 것처럼 실제로 소식을 접하는 흔한 계기로 쓴다.\n- 장소·기관·행사는 초등학생이 이름만 듣고 바로 아는 흔한 것만 쓴다: 집, 학교(교실·운동장·급식실·도서실), 놀이터, 공원, 아파트, 동네 가게·시장·마트, 도서관, 행정복지센터(주민센터), 복지관, 병원, 버스·지하철, 학교 행사(운동회·학예회·현장체험학습), 동네 축제. 사회·국제의 일은 정부, 구호대, 의료진, 소방관처럼 누구나 아는 사람·기관을 쓴다. 학생에게 낯선 시설이나 기관, 그런 곳에서 흔히 열리지 않는 행사(예: 특정 시설에서 여는 축구 대회)는 쓰지 않는다.",
-  "formatLine": "[작성 형식] 이야기 본문만 정확히 2~3문장으로 쓴다. 한 문장은 짧게(50자 안팎) 쓰고, 한 문장에 사건을 여러 개 이어 붙이지 않는다. 제목·설명·따옴표·점검 과정, 사례 유형이나 개념 이름 표시(예: '개념: ○○')는 출력하지 않는다. 인물의 마음을 나타내는 말은 이 이야기의 상황에 맞게 새로 쓰고, 어디에나 붙일 수 있는 상투적인 문구는 쓰지 않는다.\n{{gradeStyle}}",
+  "formatLine": "[작성 형식] 이야기 본문만 정확히 2~3문장으로 쓴다. 한 문장은 짧게(50자 안팎, 길어도 70자 이내) 쓰고, 이야기 전체는 180자 이내로 쓴다. 한 문장에 사건을 여러 개 이어 붙이지 않는다(쉼표로 길게 잇지 말고 마침표로 끊는다). 장면을 자세히 묘사하거나 뒷이야기를 덧붙이지 않는다. 제목·설명·따옴표·점검 과정, 사례 유형이나 개념 이름 표시(예: '개념: ○○')는 출력하지 않는다. 인물의 마음을 나타내는 말은 이 이야기의 상황에 맞게 새로 쓰고, 어디에나 붙일 수 있는 상투적인 문구는 쓰지 않는다.\n{{gradeStyle}}",
   "finalCheckIntro": "[최종 점검 — 출력하지 말고 속으로만 수행] 초안을 쓴 뒤, 아래 중 하나라도 해당하면 처음부터 다시 써라. 통과한 최종 이야기만 출력하라.",
   "avoidLineTemplate": "[앞 이야기와 겹치지 않기 — 필수] 아래는 지금까지 이 학생에게 보여준 이야기들이다. 장소, 사건의 종류(예: 길을 잃은 사람, 짐을 떨어뜨린 사람, 표를 못 사는 사람), 첫 문장을 여는 방식, 마음을 표현하는 문구가 겹치지 않게, 완전히 다른 장면으로 새 이야기를 써라. 등장인물 이름만 바꾸는 것은 새 이야기가 아니다.\n{{list}}",
   "easierLine": "[쉽게] 이전 이야기보다 더 짧은 문장과 쉬운 낱말로, 초등학생에게 익숙한 장면으로 써라. 단, 사례 유형(또는 이야기의 목적)은 그대로 지킨다.",
@@ -1331,7 +1331,7 @@ function screenStudentInput(text) {
   const t = String(text || '');
   if (CRISIS_PATTERNS.some(re => re.test(t))) {
     return { ok: false, kind: 'crisis',
-      message: '💛 마음이 많이 힘든 것 같아요. 이런 이야기는 AI보다 선생님이나 믿을 수 있는 어른에게 꼭 말해 주세요. 지금 선생님께 손을 들어 알려도 괜찮아요.\n\n수업 활동을 이어 가려면 입력한 글을 고쳐서 다시 보내 주세요.' };
+      message: '💛 마음이 많이 힘든 것 같아요. 이런 이야기는 AI보다 선생님이나 믿을 수 있는 어른에게 꼭 말해 주세요. 지금 선생님께 손을 들어 알려도 괜찮아요. (청소년 상담 전화 1388도 언제든 도와줄 수 있어요.)\n\n수업 활동을 이어 가려면 입력한 글을 고쳐서 다시 보내 주세요.' };
   }
   const squeezed = t.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣ]/g, '');
   const cleaned = PROFANITY_ALLOW.reduce((s, w) => s.split(w).join(''), squeezed);
@@ -1567,8 +1567,27 @@ function conceptNames(spec) {
 }
 
 // 확실한 문제가 있으면 이유(문장)를, 없으면 null을 돌려준다.
+// 길이 기준: 지시문의 "2~3문장, 한 문장 50자 안팎"을 모델이 지키지 않을 때(특히 작은 모델) 코드로 걸러 다시 쓰게 한다.
+const MAX_SENTENCE_CHARS = 80;  // 한 문장 최대 글자 수(띄어쓰기 포함)
+const MAX_STORY_CHARS = 200;    // 이야기 전체 최대 글자 수
+const MAX_SENTENCES = 4;
+function splitSentences(text) {
+  return (String(text || '').match(/[^.!?。]+[.!?。]+["'”’)]*|[^.!?。]+$/g) || []).map(s => s.trim()).filter(Boolean);
+}
+function lengthProblem(story) {
+  const t = String(story || '').trim();
+  const sents = splitSentences(t);
+  const longest = sents.reduce((m, s) => Math.max(m, s.length), 0);
+  if (sents.length > MAX_SENTENCES || longest > MAX_SENTENCE_CHARS || t.length > MAX_STORY_CHARS) {
+    return `이야기가 너무 길다(문장 ${sents.length}개, 가장 긴 문장 ${longest}자, 전체 ${t.length}자). 2~3문장, 한 문장 60자 이내, 전체 180자 이내로 다시 써라. 사건과 꾸미는 말을 줄이고, 쉼표로 길게 잇지 말고 마침표로 끊어라.`;
+  }
+  return null;
+}
+
 function ruleCheckStory(story, spec) {
   const t = String(story || '');
+  const tooLong = lengthProblem(t);
+  if (tooLong) return tooLong;
   if (/(?:관련|전형적|반대|경계)\s*사례|사례\s*유형|정한\s*개념|개념\s*[:：]/.test(t)) {
     return '이야기 본문에 사례 유형이나 개념 이름 같은 표시가 섞여 있다(정답을 알려 주게 된다).';
   }
@@ -1589,12 +1608,14 @@ function ruleCheckStory(story, spec) {
 async function generateVerified(basePrompt, spec) {
   let draft = '', verdict = null, maxAttempts = MAX_GEN_ATTEMPTS;
   let bestRulePassed = ''; // 규칙 검사는 통과한 초안(AI 판정만 탈락) — 모두 탈락할 때 이것을 우선 쓴다.
+  let shortestLong = '';   // 길이 때문에 탈락한 초안 중 가장 짧은 것 — 규칙을 통과한 초안이 없을 때 쓴다.
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const prompt = attempt === 1
       ? basePrompt
       : basePrompt + fillTemplate(PROMPTS.retryFeedbackTemplate, { reason: verdict.reason, draft });
     draft = cleanStory(await ask(prompt)); // 생성 자체의 실패(네트워크 등)는 호출한 쪽에서 처리한다.
     const ruleReason = ruleCheckStory(draft, spec);
+    if (ruleReason && lengthProblem(draft) && (!shortestLong || draft.length < shortestLong.length)) shortestLong = draft;
     if (ruleReason) {
       verdict = { pass: false, reason: ruleReason, byRule: true };
       maxAttempts = Math.max(maxAttempts, MAX_GEN_ATTEMPTS + 1); // 확실한 문제는 한 번 더 기회를 준다.
@@ -1610,7 +1631,7 @@ async function generateVerified(basePrompt, spec) {
   }
   // 재생성까지 탈락하면, 규칙 검사를 통과한 가장 최근 초안을 쓴다(없으면 마지막 초안).
   console.warn(`[사례 검수] ${spec.kind}: 재생성 후에도 탈락 — ${bestRulePassed ? '규칙 검사를 통과한 초안' : '마지막 초안'}을 사용합니다.`);
-  return bestRulePassed || draft;
+  return bestRulePassed || shortestLong || draft;
 }
 
 // 방 코드(교사가 만들거나, 학생이 링크로 전달받은 값)를 통해 서버(/api/chat)를 거쳐
