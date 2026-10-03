@@ -1331,7 +1331,7 @@ function screenStudentInput(text) {
   const t = String(text || '');
   if (CRISIS_PATTERNS.some(re => re.test(t))) {
     return { ok: false, kind: 'crisis',
-      message: '💛 마음이 많이 힘든 것 같아요. 이런 이야기는 AI보다 선생님이나 믿을 수 있는 어른에게 꼭 말해 주세요. 지금 선생님께 손을 들어 알려도 괜찮아요. (청소년 상담 전화 1388도 언제든 도와줄 수 있어요.)\n\n수업 활동을 이어 가려면 입력한 글을 고쳐서 다시 보내 주세요.' };
+      message: '💛 마음이 많이 힘든 것 같아요. 이런 이야기는 AI보다 선생님이나 믿을 수 있는 어른에게 꼭 말해 주세요. 지금 선생님께 손을 들어 알려도 괜찮아요.\n\n수업 활동을 이어 가려면 입력한 글을 고쳐서 다시 보내 주세요.' };
   }
   const squeezed = t.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣ]/g, '');
   const cleaned = PROFANITY_ALLOW.reduce((s, w) => s.split(w).join(''), squeezed);
