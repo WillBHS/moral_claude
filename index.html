@@ -2594,8 +2594,8 @@ async function loadServerConfig() {
 function applyServerConfigToSetup() {
   if (!SERVER_CONFIG.serverKey) return;
   document.getElementById('setup-key-msg').innerHTML = SERVER_CONFIG.needCode
-    ? '교사 코드를 입력하고 수업 방을 만들어 주세요.<br>API 키는 필요 없어요.'
-    : '수업 방을 만들어 주세요.<br>API 키는 필요 없어요.';
+    ? '교사 코드를 입력하고 수업 방을 만들어 주세요.'
+    : '수업 방을 만들어 주세요.';
   document.getElementById('setup-api-key').style.display = 'none';
   document.getElementById('setup-key-hint').style.display = 'none';
   document.getElementById('setup-teacher-code').style.display = SERVER_CONFIG.needCode ? '' : 'none';
