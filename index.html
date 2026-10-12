@@ -2882,7 +2882,11 @@ async function createRoom(payload) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    const data = await res.json();
+    // 서버 함수가 멈추면 Vercel이 JSON이 아닌 글("A server error has occurred")을 돌려준다 — 알아보기 쉬운 안내로 바꾼다.
+    const raw = await res.text();
+    let data;
+    try { data = JSON.parse(raw); }
+    catch (e) { throw new Error(`서버에서 오류가 났어요(${res.status}). 방금 GitHub에 파일을 올렸다면 Vercel 배포가 끝난 뒤(1~2분) 다시 시도해 주세요.`); }
     if (!res.ok) {
       // 저장소 설정 문제일 때는 원인을 찾기 쉽도록, 서버가 찾은 저장소 관련 환경변수 "이름"을 함께 보여준다(값은 없음).
       const extra = data.envNames ? ` [찾은 저장소 변수: ${data.envNames.length ? data.envNames.join(', ') : '없음'}]` : '';
