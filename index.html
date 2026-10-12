@@ -396,10 +396,9 @@
     <div class="setup-emoji">🤖</div>
     <h2>도덕 AI 도우미</h2>
 
-    <div id="setup-step-key" style="visibility:hidden;">
+    <div id="setup-step-key">
       <p id="setup-key-msg">선생님의 Claude API 키를 입력해 주세요.<br>이 키는 서버에만 저장되고, 학생에게는 노출되지 않아요.</p>
       <input id="setup-api-key" type="password" placeholder="Claude API 키 붙여넣기 (sk-ant-로 시작)">
-      <input id="setup-teacher-code" type="text" placeholder="교사 코드 입력" style="display:none;" autocomplete="off" autocapitalize="off" spellcheck="false">
       <button id="setup-create-btn">방 만들기</button>
       <p class="setup-hint" id="setup-key-hint">키가 없으신가요? <a href="https://platform.claude.com/docs/en/get-api-key" target="_blank" rel="noopener">Claude Console 키 발급 안내</a>를 참고해 주세요.</p>
       <div id="setup-error" class="setup-error"></div>
@@ -1343,16 +1342,9 @@ const PRIVACY_PATTERNS = [
 const PROFANITY = ['씨발', '시발', '씨팔', '씨바', 'ㅅㅂ', 'ㅆㅂ', '병신', '븅신', 'ㅂㅅ', '좆', 'ㅈ같', '존나', '졸라', 'ㅈㄴ',
   '개새끼', '개새', '미친놈', '미친년', '미친새끼', '지랄', 'ㅈㄹ', '닥쳐', '꺼져', '엿먹', '느금', '니애미', '니미', '섹스', '야동'];
 const PROFANITY_ALLOW = ['시발점', '시발역']; // 욕설과 글자가 겹치는 보통 낱말
-// 도움이 필요할 수 있는 신호(자해·자살·학대)
-const CRISIS_PATTERNS = [/죽고\s*싶/, /자살/, /자해/, /죽어\s*버리/, /사라지고\s*싶/, /살기\s*싫/, /손목을?\s*긋/, /목을?\s*매/,
-  /(?:엄마|아빠|부모님?|선생님|어른)[가-힣\s]{0,6}(?:때려|때린|맞았|맞아서|맞고)/];
 
 function screenStudentInput(text) {
   const t = String(text || '');
-  if (CRISIS_PATTERNS.some(re => re.test(t))) {
-    return { ok: false, kind: 'crisis',
-      message: '💛 마음이 많이 힘든 것 같아요. 이런 이야기는 AI보다 선생님이나 믿을 수 있는 어른에게 꼭 말해 주세요. 지금 선생님께 손을 들어 알려도 괜찮아요. (청소년 상담 전화 1388도 언제든 도와줄 수 있어요.)\n\n수업 활동을 이어 가려면 입력한 글을 고쳐서 다시 보내 주세요.' };
-  }
   const squeezed = t.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣ]/g, '');
   const cleaned = PROFANITY_ALLOW.reduce((s, w) => s.split(w).join(''), squeezed);
   if (PROFANITY.some(w => cleaned.includes(w))) {
@@ -1379,7 +1371,6 @@ function passesInputScreen(v) {
   const now = Date.now();
   if (now - lastScreenWarnAt > 400) pushAI(r.message); // 연속으로 눌러도 안내가 여러 번 쌓이지 않게
   lastScreenWarnAt = now;
-  if (r.kind === 'crisis') console.warn('[입력 확인] 도움이 필요할 수 있는 표현이 감지되어 전송하지 않았습니다.');
   return false;
 }
 
@@ -2879,31 +2870,6 @@ function showShareButton() {
   if (shareBtn) shareBtn.style.display = 'flex';
 }
 
-// 서버 설정: 서버(Vercel 환경변수)에 운영자 API 키가 들어 있으면 교사는 키를 입력하지 않는다.
-// 서버가 이 정보를 주지 않으면(예전 서버, 접속 실패) 기존처럼 교사가 키를 입력하는 화면을 쓴다.
-const SERVER_CONFIG = { serverKey: false, needCode: false };
-async function loadServerConfig() {
-  try {
-    const res = await fetch('/api/config', { cache: 'no-store' });
-    if (!res.ok) return;
-    const data = await res.json();
-    SERVER_CONFIG.serverKey = !!data.serverKey;
-    SERVER_CONFIG.needCode = !!data.needCode;
-  } catch (e) { /* 기존 방식(키 입력) 유지 */ }
-}
-function applyServerConfigToSetup() {
-  if (!SERVER_CONFIG.serverKey) return;
-  document.getElementById('setup-key-msg').innerHTML = SERVER_CONFIG.needCode
-    ? '교사 코드를 입력하고 수업 방을 만들어 주세요.'
-    : '수업 방을 만들어 주세요.';
-  document.getElementById('setup-api-key').style.display = 'none';
-  document.getElementById('setup-key-hint').style.display = 'none';
-  document.getElementById('setup-teacher-code').style.display = SERVER_CONFIG.needCode ? '' : 'none';
-  document.getElementById('setup-create-btn').textContent = '수업 방 만들기';
-  const restart = document.getElementById('room-restart-link');
-  if (restart) restart.textContent = '새 방 만들기';
-}
-
 async function createRoom(payload) {
   const errEl = document.getElementById('setup-error');
   const btn = document.getElementById('setup-create-btn');
@@ -2929,21 +2895,12 @@ async function createRoom(payload) {
     errEl.textContent = '⚠️ ' + e.message;
   } finally {
     btn.disabled = false;
-    btn.textContent = SERVER_CONFIG.serverKey ? '수업 방 만들기' : '방 만들기';
+    btn.textContent = '방 만들기';
   }
 }
 
 function wireSetupScreen() {
   document.getElementById('setup-create-btn').onclick = () => {
-    if (SERVER_CONFIG.serverKey) {
-      const code = document.getElementById('setup-teacher-code').value.trim();
-      if (SERVER_CONFIG.needCode && !code) {
-        document.getElementById('setup-error').textContent = '⚠️ 교사 코드를 입력해 주세요.';
-        return;
-      }
-      createRoom({ teacherCode: code });
-      return;
-    }
     const key = document.getElementById('setup-api-key').value.trim();
     if (!key) {
       document.getElementById('setup-error').textContent = '⚠️ API 키를 입력해 주세요.';
@@ -2951,7 +2908,7 @@ function wireSetupScreen() {
     }
     createRoom({ apiKey: key });
   };
-  document.getElementById('setup-teacher-code').addEventListener('keydown', (e) => {
+  document.getElementById('setup-api-key').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') document.getElementById('setup-create-btn').click();
   });
   document.getElementById('room-copy-btn').onclick = () => {
@@ -2980,7 +2937,6 @@ function wireSetupScreen() {
     localStorage.removeItem('moral_explorer_room');
     ROOM_CODE = null;
     document.getElementById('setup-api-key').value = '';
-    document.getElementById('setup-teacher-code').value = '';
     document.getElementById('setup-error').textContent = '';
     document.getElementById('setup-step-room').style.display = 'none';
     document.getElementById('setup-step-key').style.display = 'block';
@@ -3019,9 +2975,6 @@ function wireSetupScreen() {
   }
 
   loadSavedLesson(); // 교사: 전에 골라둔 수업 설정을 그대로 불러온다
-  await loadServerConfig();
-  applyServerConfigToSetup();
-  document.getElementById('setup-step-key').style.visibility = 'visible'; // 서버 설정을 확인한 뒤에 보여 준다(화면 깜빡임 방지)
   const savedRoom = localStorage.getItem('moral_explorer_room');
   if (savedRoom) {
     // 이전에 방을 만들어둔 선생님이 돌아온 경우: 바로 이어서 쓸 수 있게 하고, 공유 버튼도 보여준다.
@@ -3037,7 +2990,7 @@ function wireSetupScreen() {
     return;
   }
 
-  // 처음 접속: 방 만들기 화면(API 키 입력 또는 서버 키 모드의 교사 코드 입력)을 그대로 둔다(#setup-overlay는 기본으로 표시되어 있음).
+  // 처음 접속: 방 만들기 화면(API 키 입력)을 그대로 둔다(#setup-overlay는 기본으로 표시되어 있음).
 })();
 </script>
 </body>
