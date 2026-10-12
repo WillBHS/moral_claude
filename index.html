@@ -1181,7 +1181,25 @@ const DEFAULT_PROMPTS = {
       ],
       "scope": "[인류애 사례의 범위 — 필수] 지도서 정의상 인류애는 국경과 인종을 넘어 지구촌 타자를 향한다. 전형적·반대·경계 사례는 다른 나라 사람들(또는 다른 나라에서 온 사람들)과 관련된 상황이어야 한다. 관련 사례는 우리 주변 사람을 향한 다른 개념이어도 된다. 장면은 아래처럼 흔한 것에서 고르고, 사례마다 서로 다른 장면을 쓴다.\n- 다른 나라에 지진·홍수 같은 큰 재해가 나자, 우리나라와 여러 나라가 구호대·의료진·구호 물품을 보낸 일\n- 가족과 저녁 뉴스를 보다가 다른 나라 어린이들이 깨끗한 물을 마시지 못하거나 학교에 가지 못한다는 소식을 알게 된 일\n- 학교에서 어려운 나라 어린이를 돕는 모금·물품 모으기에 참여하는 일(저금통, 학용품 모으기 등)\n- 다른 나라에서 온 전학생·반 친구와 함께 지내는 학교생활(말이 서툴러 도움이 필요할 때, 생김새나 말투로 놀림을 받을 때 등)\n- 길을 묻는 외국인 관광객을 만난 일\n위 장면에 없는 시설·단체·행사를 새로 만들어 넣지 않는다. 전쟁 장면은 쓰지 않는다.",
       "notes": "",
-      "extraFailChecks": {}
+      "extraFailChecks": {},
+      "fallbackCounters": {
+        "동기": [
+          "다른 나라에 큰 지진이 나자 학교에서 구호 물품을 모았다. 서준이는 가장 많이 가져온 반에 칭찬 스티커를 준다는 말을 듣고 담요와 옷을 잔뜩 챙겨 왔다. 지진 피해를 입은 사람들이 따뜻하게 지냈으면 좋겠다는 생각도 들었다.",
+          "민아는 다른 나라 어린이들이 학교에 다닐 수 있게 돕는 모금에 용돈을 냈다. 그런데 기부한 사람의 이름을 학교 게시판에 붙여 준다는 말을 듣고 더 많이 내고 싶어졌다. 민아는 그 어린이들의 얼굴을 떠올리며 저금통을 열었다."
+        ],
+        "대상과 범위": [
+          "하윤이는 다른 나라 어린이들에게 보낼 학용품을 사려고 용돈을 모았다. 그런데 같은 반 친구가 준비물을 살 돈이 없어 곤란해하는 것을 보았다. 모은 돈으로는 둘 중 한쪽만 도울 수 있었다.",
+          "도윤이네 반은 홍수 피해를 입은 나라에 보낼 구호 물품을 모았다. 그때 우리 동네에도 불이 나서 집을 잃은 가족이 있다는 소식이 들려왔다. 반 친구들은 모은 물품을 어디로 보낼지 의견이 나뉘었다."
+        ],
+        "의도와 결과": [
+          "지호네 반은 가뭄을 겪는 나라 어린이들에게 보내려고 헌 옷을 모았다. 그런데 그 나라는 매우 더워서 두꺼운 겨울옷은 거의 쓸 수 없다는 이야기를 나중에 들었다. 지호는 보낸 옷이 정말 도움이 되었는지 궁금해졌다.",
+          "수아는 우리 반에 새로 온 외국인 친구를 도우려고 쉬는 시간마다 옆에서 한국어 낱말을 알려 주었다. 친구는 고맙다고 했지만 다른 아이들과 놀 시간이 줄어들었다. 수아는 친구가 원한 도움이 무엇이었는지 생각해 보았다."
+        ],
+        "책임과 실천의 한계": [
+          "은우는 깨끗한 물을 마시지 못하는 나라 어린이들 이야기를 보고 매달 용돈의 일부를 기부하기로 했다. 처음 두 달은 꼬박꼬박 냈지만, 갖고 싶은 장난감이 생기자 기부를 멈췄다. 은우는 그 어린이들이 어떻게 지내는지 가끔 떠올린다.",
+          "준서는 다른 나라에서 온 친구가 숙제를 어려워하자 매일 도와주겠다고 약속했다. 하지만 학원 시간이 늘어나 일주일에 한 번밖에 도와줄 수 없게 되었다. 준서는 그 한 번만이라도 정성껏 도와주고 있다."
+        ]
+      }
     }
   ],
   "counterReasons": {
@@ -1190,7 +1208,8 @@ const DEFAULT_PROMPTS = {
     "의도와 결과": "의도와 결과 — 좋은 뜻으로 한 행동이 뜻밖의 문제를 일으키거나 상대에게 정말 도움이 되었는지 불확실하다.",
     "책임과 실천의 한계": "책임과 실천의 한계 — 하고 싶은 마음은 있지만 할 수 있는 일이 일부에 그치거나, 끝까지 책임지기 어렵다."
   },
-  "probeTemplate": "학생이 [{{value}}]에 대해 정리한 뜻: \"{{def2}}\"\n학생에게 보여준 가상 상황(경계 사례): \"{{story}}\"\n학생이 고른 판단: \"{{choiceLabel}}\"\n학생이 쓴 판단 이유: \"{{reason}}\"\n\n너는 학생이 사용한 판단 기준을 스스로 다시 검토하게 하는 소크라테스식 질문을 딱 한 문장만 만든다.\n- 학생의 이유에 쓰인 낱말을 직접 짚고, 그 기준을 이 상황의 다른 쪽 측면([{{value}}]{{ro}} 볼 수 있는 점 또는 그렇게 보기 어려운 점)에 비추어 생각하게 한다. 이유가 양쪽을 모두 짚었으면 그 기준 낱말이 이 상황의 어디까지 들어맞는지 묻는다.\n- '어떻게', '왜', '어떤 점에서'로 묻고, '~아닐까요?', '~지 않나요?'처럼 답을 정해 둔 꼴로 묻지 않는다.\n- 특정한 결론이나 뜻의 수정을 유도하지 않고, 학생의 판단을 칭찬·평가·판정하지 않는다(\"맞아요\", \"좋은 생각이에요\" 등 절대 금지).\n- 판단하기 어려운 이유의 종류 이름(동기, 대상과 범위 등)이나 사례 유형 이름을 쓰지 않는다.\n초등 {{grade}}학년이 이해할 수 있는 쉬운 말로 쓴다.\n\n**반드시 '~요?', '~나요?', '~어요?'처럼 끝나는 존댓말(해요체)로 써라. 반말은 절대 쓰지 마라.**\n\n{{questionStyle}}\n\n질문 문장 하나만 출력하고 다른 설명은 하지 마라."
+  "probeTemplate": "학생이 [{{value}}]에 대해 정리한 뜻: \"{{def2}}\"\n학생에게 보여준 가상 상황(경계 사례): \"{{story}}\"\n학생이 고른 판단: \"{{choiceLabel}}\"\n학생이 쓴 판단 이유: \"{{reason}}\"\n\n너는 학생이 사용한 판단 기준을 스스로 다시 검토하게 하는 소크라테스식 질문을 딱 한 문장만 만든다.\n- 학생의 이유에 쓰인 낱말을 직접 짚고, 그 기준을 이 상황의 다른 쪽 측면([{{value}}]{{ro}} 볼 수 있는 점 또는 그렇게 보기 어려운 점)에 비추어 생각하게 한다. 이유가 양쪽을 모두 짚었으면 그 기준 낱말이 이 상황의 어디까지 들어맞는지 묻는다.\n- '어떻게', '왜', '어떤 점에서'로 묻고, '~아닐까요?', '~지 않나요?'처럼 답을 정해 둔 꼴로 묻지 않는다.\n- 특정한 결론이나 뜻의 수정을 유도하지 않고, 학생의 판단을 칭찬·평가·판정하지 않는다(\"맞아요\", \"좋은 생각이에요\" 등 절대 금지).\n- 판단하기 어려운 이유의 종류 이름(동기, 대상과 범위 등)이나 사례 유형 이름을 쓰지 않는다.\n초등 {{grade}}학년이 이해할 수 있는 쉬운 말로 쓴다.\n\n**반드시 '~요?', '~나요?', '~어요?'처럼 끝나는 존댓말(해요체)로 써라. 반말은 절대 쓰지 마라.**\n\n{{questionStyle}}\n\n질문 문장 하나만 출력하고 다른 설명은 하지 마라.",
+  "definitionJudgeTemplate": "너는 초등 {{grade}}학년 도덕 수업에서 학생이 쓴 글을 확인하는 교사다. 학생에게 '[{{value}}]의 뜻을 내 말로 적어 보라'고 했고, 학생이 아래처럼 썼다.\n학생의 글: \"{{answer}}\"\n\n이 글이 [{{value}}]{{iGa}} 무엇인지(어떤 마음·태도·행동인지, 누구를 향하는지)를 말하려고 쓴 문장인지만 판정하라. 뜻이 맞는지 틀리는지, 충분한지는 판정하지 않는다.\n- 통과: 내용이 부족하거나 지도서의 뜻과 달라 보여도, [{{value}}]의 뜻을 말하려고 쓴 글 (예: \"~를 돕는 마음\", \"~를 위해 ~하는 행동\", \"모든 사람을 ~하는 태도\")\n- 탈락: 질문이나 말대꾸, 장난, 덕목과 관계없는 말, 뜻이 아니라 낱말 하나나 느낌만 쓴 글 (예: \"뜻있나요\", \"좋은 거\", \"몰라\", \"사과 맛있다\")\n확신이 서지 않으면 '통과'로 판정하라.\n\n[출력 형식 — 반드시 지킬 것] 아래 두 줄 중 하나만 출력하고, 다른 말은 쓰지 마라.\n판정: 통과\n판정: 탈락"
 };
 let PROMPTS = DEFAULT_PROMPTS;
 async function loadPrompts() {
@@ -1394,6 +1413,89 @@ function meaninglessMessage(kind) {
     : '🤔 이 답으로는 생각을 알기 어려워요. 떠오른 생각을 문장으로 조금 더 자세히 써 줄래요?';
   return meaninglessStreak >= 3 ? base + '\n\n✋ 어렵다면 손을 들어 선생님께 도움을 요청해도 좋아요.' : base;
 }
+// ---------- 뜻(정의) 입력 확인 ----------
+// 처음 뜻(활동1)·다시 정리한 뜻(활동2)은 활동3 가상 상황의 재료가 되므로 더 엄격하게 본다.
+// ① 규칙 검사(학생 기기에서 바로) → ② AI 판정('뜻을 말하려는 시도인가'만 봄, 정답 여부는 보지 않음)
+// → ③ 막히면 단계별로 도움(문장 틀 → 선생님 도움). 건너뛰기는 두지 않는다.
+function hangulCount(s) { return (String(s || '').match(/[가-힣]/g) || []).length; }
+function hangulWords(s) { return String(s || '').split(/\s+/).filter(w => /[가-힣]/.test(w)); }
+function squeezeText(s) { return String(s || '').replace(/[^가-힣A-Za-z0-9]/g, ''); }
+function definitionRuleKind(v, value) {
+  const t = String(v || '').trim();
+  const syll = hangulCount(t);
+  const sv = squeezeText(value);
+  // 덕목 이름만 되풀이(예: "인류애는 인류애다", "인류애 뜻")
+  if (sv && squeezeText(t).includes(sv)) {
+    const rest = squeezeText(t).split(sv).join('')
+      .replace(/(?:뜻|의미|이란|이라는|라는|이다|입니다|이에요|예요|이야|것|거|란|은|는|이|가|다|요)/g, '');
+    if (hangulCount(rest) < 3) return 'tautology';
+  }
+  // 물음꼴·말대꾸(예: "뜻있나요", "뭐지", "그런가?") — 내용이 충분한 물음꼴은 통과
+  if (/(?:[?？]|나요|까요|가요|니|냐|을까|지|죠|래|대|ㅋ+|ㅎ+)\s*[?？!~.]*\s*$/.test(t) && syll < 10) {
+    return /(?:[?？]|나요|까요|가요|니|냐|을까)\s*[?？!~.]*\s*$/.test(t) ? 'question' : 'short';
+  }
+  if (syll < 6 || hangulWords(t).length < 2) return 'short';
+  // AI가 보여 준 이야기 문장을 그대로 옮김(12글자 이상이 그대로 겹침)
+  const n = squeezeText(t);
+  if (n.length >= 12) {
+    const sources = [...(state.cases || []).map(c => c && c.text), ...(state.situationHistory || [])]
+      .filter(Boolean).map(squeezeText);
+    for (let i = 0; i + 12 <= n.length; i++) {
+      const w = n.slice(i, i + 12);
+      if (sources.some(src => src.includes(w))) return 'copy';
+    }
+  }
+  return null;
+}
+let defRejectStreak = 0; // 뜻 입력에서 연달아 막힌 횟수(2번째부터 문장 틀, 3번째부터 선생님 도움)
+function definitionMessage(kind, value, step) {
+  defRejectStreak++;
+  const V = `[${value}]`, b = hasBatchim(value);
+  const iGa = b ? '이' : '가', eunNeun = b ? '은' : '는', iRaneun = b ? '이라는' : '라는';
+  const base = {
+    short: `🤔 이 글만으로는 내가 생각한 ${V}의 뜻을 알기 어려워요. ${V}${iGa} 어떤 마음이나 행동인지 문장으로 조금 더 자세히 써 볼까요?`,
+    question: `🤔 질문이 아니라, 내가 생각하는 ${V}의 뜻을 문장으로 써 주세요.`,
+    tautology: `🤔 ${V}${iRaneun} 말을 빼고, ${V}${iGa} 어떤 마음이나 행동인지 내 말로 풀어서 써 볼까요?`,
+    copy: `🤔 AI가 보여 준 이야기의 문장을 그대로 옮긴 것 같아요. 이야기를 보고 내가 생각한 ${V}의 뜻을 내 말로 써 볼까요?`,
+    ai: `🤔 이 글만으로는 내가 생각한 ${V}의 뜻을 알기 어려워요. ${V}${iGa} 어떤 마음이나 행동인지, 누구를 향하는지 문장으로 써 볼까요?`,
+  }[kind] || '';
+  let msg = base;
+  if (defRejectStreak >= 2) {
+    msg += `\n\n✏️ 이렇게 써 볼 수 있어요: ${V}${eunNeun} (누구)를 (어떻게) 하는 (마음 / 태도 / 행동)이다.`
+      + `\n📒 ${step === 'def2' ? '활동지 ④에 정리한 내용' : '활동지 ②에 쓴 내 생각'}을 다시 읽어 보세요.`;
+  }
+  if (defRejectStreak >= 3) msg += '\n\n✋ 어렵다면 손을 들어 선생님께 도움을 요청하세요.';
+  return msg;
+}
+// AI 판정: 탈락이면 false. 호출이 실패하면 수업이 멈추지 않게 통과(true)로 하고, 확인하지 못했다고 표시한다.
+let lastDefAIChecked = false;
+async function judgeDefinition(v) {
+  lastDefAIChecked = false;
+  try {
+    const out = await ask(fillTemplate(PROMPTS.definitionJudgeTemplate, { answer: v }), 'quick');
+    lastDefAIChecked = true;
+    const fail = /판정\s*[:：]?\s*탈락/.test(out || '');
+    console.info(`[뜻 확인] AI 판정: ${fail ? '탈락' : '통과'} — "${v}"`);
+    return !fail;
+  } catch (e) {
+    console.warn('[뜻 확인] AI 판정 호출 실패 — 규칙 검사만으로 진행합니다.');
+    return true;
+  }
+}
+async function validateDefinition(v, step) {
+  const kind = definitionRuleKind(v, state.value);
+  if (kind) {
+    console.info(`[뜻 확인] 규칙 검사 탈락(${kind}) — "${v}"`);
+    pushAI(definitionMessage(kind, state.value, step));
+    return false;
+  }
+  if (!(await judgeDefinition(v))) {
+    pushAI(definitionMessage('ai', state.value, step));
+    return false;
+  }
+  defRejectStreak = 0;
+  return true;
+}
 // 활동1 사례 박스 상단에 표시할, 사례 유형별 태그 문구.
 function caseTag(typeKey, value) {
   const b = hasBatchim(value);
@@ -1589,8 +1691,20 @@ function lengthProblem(story) {
   return null;
 }
 
+// 이야기 대신 "학생의 뜻을 알려주세요", "죄송합니다"처럼 요청에 대해 설명하거나 되묻는 글을 쓴 경우.
+// 따옴표 속 대사("감사합니다" 등)는 빼고 본다.
+function looksLikeMetaReply(story) {
+  const t = String(story || '');
+  const outside = t.replace(/["“][^"”]*["”]/g, '').replace(/['‘][^'’]*['’]/g, '');
+  if (/알려\s*주(?:세요|시면|셔야|십시오)|말씀해|죄송|학생이\s*(?:정리|제시|쓴|입력)|(?:경계\s*사례|가상\s*상황|이야기)를?\s*(?:만들|작성)(?:겠|기\s*위해|어\s*드리|ㄹ\s*수)|주시기\s*바랍니다|드리겠|하겠습니다/.test(t)) return true;
+  if (/[?？]/.test(outside)) return true;
+  if (/(?:습니다|세요|까요|해요|에요|예요)\s*[.!]?\s*(?:\n|$|\s)/.test(outside)) return true;
+  return false;
+}
+
 function ruleCheckStory(story, spec) {
   const t = String(story || '');
+  if (looksLikeMetaReply(t)) return '이야기가 아니라 요청에 대한 설명이나 되묻는 말을 썼다. 학생의 뜻이 짧거나 어색해도 묻지 말고, 그 뜻에 쓰인 낱말을 그대로 겨냥해 이야기 본문만 써라.';
   const tooLong = lengthProblem(t);
   if (tooLong) return tooLong;
   if (/(?:관련|전형적|반대|경계)\s*사례|사례\s*유형|정한\s*개념|개념\s*[:：]/.test(t)) {
@@ -1635,8 +1749,21 @@ async function generateVerified(basePrompt, spec) {
     if (verdict.pass) return draft;
   }
   // 재생성까지 탈락하면, 규칙 검사를 통과한 가장 최근 초안을 쓴다(없으면 마지막 초안).
-  console.warn(`[사례 검수] ${spec.kind}: 재생성 후에도 탈락 — ${bestRulePassed ? '규칙 검사를 통과한 초안' : '마지막 초안'}을 사용합니다.`);
-  return bestRulePassed || shortestLong || draft;
+  const fb = bestRulePassed ? '' : fallbackStory(spec);
+  const chosen = bestRulePassed || fb || shortestLong || (looksLikeMetaReply(draft) ? '' : draft);
+  console.warn(`[사례 검수] ${spec.kind}: 재생성 후에도 탈락 — ${bestRulePassed ? '규칙 검사를 통과한 초안' : fb ? '준비해 둔 이야기' : chosen ? '마지막 초안' : '쓸 수 있는 초안 없음'}을 사용합니다.`);
+  if (!chosen) throw new Error('쓸 수 있는 이야기가 없어요.');
+  return chosen;
+}
+
+// 가상 상황을 끝까지 만들지 못했을 때 대신 보여 줄, 교사가 검토해 둔 경계 사례(덕목 프로필의 fallbackCounters).
+function fallbackStory(spec) {
+  if (spec.kind !== 'counter') return '';
+  const p = findProfile(spec.value);
+  const pool = ((p && p.fallbackCounters) || {})[spec.reason] || [];
+  const unused = pool.filter(s => !(state.counterHistory || []).includes(s) && !(state.situationTexts || []).includes(s));
+  const list = unused.length ? unused : pool;
+  return list.length ? list[Math.floor(Math.random() * list.length)] : '';
 }
 
 // 방 코드(교사가 만들거나, 학생이 링크로 전달받은 값)를 통해 서버(/api/chat)를 거쳐
@@ -1899,10 +2026,20 @@ function setInputText(placeholder, onSubmit, opts = {}) {
   btn.className = 'send';
   btn.innerHTML = '&#10148;';
   btn.disabled = state.busy;
-  const submit = () => {
+  const submit = async () => {
     const v = ta.value.trim();
     if (!v || state.busy || btn.disabled) return;
     if (!passesInputScreen(v)) return;
+    if (opts.validate) {
+      btn.disabled = true; ta.disabled = true; setBusy(true);
+      const tid = 'v' + Date.now();
+      pushThinking(tid);
+      let ok = true;
+      try { ok = await opts.validate(v); } catch (e) { ok = true; }
+      popThinking(tid);
+      setBusy(false);
+      if (!ok) { btn.disabled = false; ta.disabled = false; ta.focus(); return; }
+    }
     hideUserTyping();
     btn.disabled = true;
     ta.disabled = true;
@@ -2157,13 +2294,14 @@ async function onCaseAnswer(v) {
 네 가지 사례를 탐구해보니, [${state.value}]의 뜻이 무엇인지 알 것 같나요?
 [${state.value}] 뜻을 적어 보세요! ✏️`);
     state.step = 'act1_def1';
-    setInputText('내가 생각하는 뜻을 적어보세요', onDef1Submit);
+    setInputText('내가 생각하는 뜻을 적어보세요', onDef1Submit, { validate: v => validateDefinition(v, 'def1') });
   }
 }
 
 async function onDef1Submit(v) {
   pushUser(v);
   state.def1 = v;
+  state.def1AIChecked = lastDefAIChecked;
   await sayAI(`✏️ 내가 정리한 [${state.value}]의 뜻은 "${v}"에요.`);
   await sayTodo('활동지 ③에도 정리해 주세요.');
   state.step = 'act2_menu';
@@ -2241,12 +2379,13 @@ async function onAct2Next() {
   pushUser('다음 질문으로 넘어갈게요');
   await sayAI(`🖊 처음 정리한 뜻은 "${state.def1}" 였어요. 관계 속 탐구를 바탕으로 [${state.value}]의 뜻을 다시 정리해서 적어 주세요.`);
   state.step = 'act2_def2';
-  setInputText('다시 정리한 뜻을 적어보세요 (개인정보는 쓰지 않아요)', onDef2Submit);
+  setInputText('다시 정리한 뜻을 적어보세요 (개인정보는 쓰지 않아요)', onDef2Submit, { validate: v => validateDefinition(v, 'def2') });
 }
 
 async function onDef2Submit(v) {
   pushUser(v);
   state.def2 = v;
+  state.def2AIChecked = lastDefAIChecked;
   await sayAI(`📝 새로운 뜻은 "${v}"에요.`);
   await sayTodo('활동지 ⑤에 정리하고 짝과 비교해 보세요.');
   await sayTodo('기존의 뜻에서 달라진 점이 있다면 활동지 ⑥에 써보세요.');
@@ -2292,8 +2431,33 @@ function counterPriorSummaries(extra = []) {
   ];
 }
 
+// 가상 상황은 학생이 다시 정리한 뜻을 재료로 만든다. 쓸 수 없는 뜻이면 AI를 부르지 않고 뜻부터 다시 쓰게 한다.
+async function def2IsUsable() {
+  if (definitionRuleKind(state.def2, state.value)) return false;
+  if (state.def2AIChecked) return true;
+  const tid = 'd' + Date.now();
+  setBusy(true); pushThinking(tid);
+  const ok = await judgeDefinition(state.def2);
+  popThinking(tid); setBusy(false);
+  if (ok) state.def2AIChecked = lastDefAIChecked;
+  return ok;
+}
+function askDef2Again() {
+  const V = `[${state.value}]`;
+  pushAI(`🤔 가상 상황에 적용하려면 내가 다시 정리한 ${V}의 뜻이 필요해요. 활동지 ⑤를 보며 ${V}의 뜻을 문장으로 다시 써 볼까요?`);
+  setInputText('다시 정리한 뜻을 적어보세요 (개인정보는 쓰지 않아요)', async (v) => {
+    pushUser(v);
+    state.def2 = v;
+    state.def2AIChecked = lastDefAIChecked;
+    await sayAI(`📝 새로운 뜻은 "${v}"에요.`);
+    await sayTodo('활동지 ⑤의 뜻도 고쳐 써 주세요.');
+    await onAct3Situation('가상 상황 보여주세요');
+  }, { validate: v => validateDefinition(v, 'def2') });
+}
+
 async function onAct3Situation(userMsg) {
   pushUser(userMsg || '가상 상황 보여주세요');
+  if (!(await def2IsUsable())) { askDef2Again(); return; }
   setBusy(true);
   const tid = 't' + Date.now();
   pushThinking(tid);
@@ -2304,7 +2468,7 @@ async function onAct3Situation(userMsg) {
   const texts = await Promise.all(reasons.map(r =>
     generateVerified(counterPrompt(state.value, state.def2, r, priorSummaries),
       { kind: 'counter', value: state.value, def2: state.def2, reason: r })
-      .catch(() => '(이야기를 만드는 데 문제가 생겼어요.)')));
+      .catch(() => fallbackStory({ kind: 'counter', value: state.value, reason: r }) || '(이야기를 만드는 데 문제가 생겼어요. 「🔄 다른 가상 상황으로」 버튼을 눌러 주세요.)')));
   popThinking(tid);
   setBusy(false);
   state.counterHistory.push(...texts);
@@ -2338,7 +2502,7 @@ async function onRegenCurrentSituation() {
     text = await generateVerified(counterPrompt(state.value, state.def2, reason, priorSummaries),
       { kind: 'counter', value: state.value, def2: state.def2, reason });
   }
-  catch (e) { text = '(이야기를 만드는 데 문제가 생겼어요.)'; }
+  catch (e) { text = fallbackStory({ kind: 'counter', value: state.value, reason }) || '(이야기를 만드는 데 문제가 생겼어요. 「🔄 다른 가상 상황으로」 버튼을 눌러 주세요.)'; }
   popThinking(tid);
   setBusy(false);
   state.situationTexts[idx] = text;
@@ -2384,6 +2548,19 @@ function onJudgmentChoice(label) {
 
 // 판단 이유 제출 — AI는 판단의 옳고 그름을 평가하지 않고, 학생이 쓴 이유의 판단 기준을 되묻는 질문을 한 번 한다.
 const PROBE_FALLBACK = '그렇게 판단한 기준이 이 상황의 다른 면에도 들어맞는지 어떻게 생각하나요?';
+function cleanProbe(q) {
+  return String(q || '').trim().split('\n')[0].replace(/^🤔\s*/, '').replace(/^["“'‘]+|["”'’]+$/g, '').trim();
+}
+function probeProblem(q) {
+  const t = cleanProbe(q);
+  if (!t) return '질문이 비어 있다.';
+  if (/(?:않을까요|않나요|아닐까요|잖아요|지요|겠죠|죠)\s*[?？]?\s*$/.test(t)) return "'~않을까요?', '~지 않나요?'처럼 답을 정해 둔 꼴로 물었다.";
+  if (/맞아요|좋은\s*생각|훌륭|잘했|멋진/.test(t)) return '학생의 판단을 칭찬하거나 평가했다.';
+  if (/알려\s*주|말씀해|죄송|학생의\s*(?:답|뜻)을/.test(t)) return '질문 대신 요청에 대한 설명이나 되묻는 말을 썼다.';
+  if (!/[?？]\s*$/.test(t)) return '물음표로 끝나는 질문 한 문장이 아니다.';
+  if (t.length > 110) return '질문이 너무 길다.';
+  return null;
+}
 async function onJudgmentReasonSubmit(v) {
   pushUser(v);
   setBusy(true);
@@ -2392,7 +2569,16 @@ async function onJudgmentReasonSubmit(v) {
   let q = PROBE_FALLBACK;
   try {
     const idx = state.currentSituationIdx;
-    q = (await ask(probePrompt(state.value, state.def2, state.situationTexts[idx], state.currentChoice, v), 'quick')) || PROBE_FALLBACK;
+    const base = probePrompt(state.value, state.def2, state.situationTexts[idx], state.currentChoice, v);
+    let cand = await ask(base, 'quick');
+    let problem = probeProblem(cand);
+    if (problem) {
+      console.info(`[질문 검사] 1차 탈락 — ${problem}`);
+      cand = await ask(base + `\n\n[직전 질문의 문제 — 반드시 고칠 것] ${problem} 직전 질문: "${cleanProbe(cand)}"\n'어떻게', '왜', '어떤 점에서'로 묻는 질문 한 문장만 다시 써라.`, 'quick');
+      problem = probeProblem(cand);
+      if (problem) console.info(`[질문 검사] 2차 탈락 — ${problem} (기본 질문 사용)`);
+    }
+    q = problem ? PROBE_FALLBACK : cleanProbe(cand);
   } catch (e) {}
   popThinking(tid);
   setBusy(false);
