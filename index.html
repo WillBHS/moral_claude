@@ -2269,7 +2269,14 @@ async function onQ1Pick(n) {
   const labels = { 1: '모든 상황에서 맞는다', 2: '맞지 않는 상황이 있을 수도 있다', 3: '모르겠다' };
   pushUser(labels[n]);
   state.q1choice = n;
-  await sayTodo('지금까지 저와 함께 나눈 대화를 활동지 ⑦에 정리해 주세요.');
+  // 고른 대답을 평가하지 않고, 그 대답을 가상 상황에서 확인해 보도록 이어 준다.
+  const bridge = {
+    1: `🤔 그렇게 생각했군요. 내가 정리한 [${state.value}]의 뜻이 정말 모든 상황에서 맞는지, 가상 상황에 적용해 보며 확인해 봐요.`,
+    2: `🤔 그렇게 생각했군요. 내가 정리한 [${state.value}]의 뜻이 어떤 상황에서 맞지 않을 수 있는지, 가상 상황에 적용해 보며 확인해 봐요.`,
+    3: `🤔 괜찮아요. 내가 정리한 [${state.value}]의 뜻을 가상 상황에 적용해 보면서 함께 생각해 봐요.`,
+  };
+  await sayAI(bridge[n]);
+  await sayTodo('내가 고른 대답을 활동지 ⑦에 표시해 주세요.');
   await sayAI('👀 이제 가상 상황을 만나러 가볼까요?');
   state.step = 'act3_situation';
   setInputChips([{ label: '🟡 가상 상황 보기', onClick: onAct3Situation }]);
