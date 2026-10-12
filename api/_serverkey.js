@@ -22,8 +22,10 @@ function teacherCode(env = process.env) {
 function teacherCodeMatches(input, env = process.env) {
   const expected = teacherCode(env);
   if (!expected) return true; // 코드를 정해 두지 않았으면 확인하지 않는다
-  const a = crypto.createHash('sha256').update(String(input || '').trim()).digest();
-  const b = crypto.createHash('sha256').update(expected).digest();
+  // 한글은 입력 환경에 따라 같은 글자도 다른 방식(조합형/완성형)으로 저장될 수 있어, 같은 형태로 맞춘 뒤 비교한다.
+  const norm = (v) => String(v || '').normalize('NFC').trim();
+  const a = crypto.createHash('sha256').update(norm(input)).digest();
+  const b = crypto.createHash('sha256').update(norm(expected)).digest();
   return crypto.timingSafeEqual(a, b);
 }
 

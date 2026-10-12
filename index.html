@@ -473,8 +473,8 @@ const INITIAL_STATE = {
   def1: '', def2: '',
   caseIdx: 0, cases: [], caseEasedThisSlot: false, caseAnswerRejectCount: 0,
   context: '', situationEased: false, situationHistory: [],
-  q1choice: null, q1answer1: '', q1answer2: '', q1reason: '', direction: null, counterHistory: [],
-  situationTexts: [], situationDirections: [], currentSituationIdx: 0,
+  q1choice: null, counterHistory: [],
+  situationTexts: [], situationReasons: [], currentSituationIdx: 0, currentChoice: '',
   busy: false,
 };
 const state = JSON.parse(JSON.stringify(INITIAL_STATE));
@@ -541,7 +541,7 @@ const DEFAULT_PROMPTS = {
     "borderline": {
       "label": "경계 사례",
       "askTemplate": "이 이야기에서 [{{value}}]{{iRago}} 볼 수 있는 점과, 그렇게 보기 어려운 점은 각각 무엇인가요?",
-      "definition": "[이번에 만들 유형: 경계 사례] 덕목 정보의 정의적 속성 중 일부는 있고 일부는 없거나 불확실해서, [{{value}}]인지 아닌지 판단이 갈리는 사례. 아래 걸리는 점 중 하나 이상이 이야기 문장 안에 분명히 드러나야 한다: 정의적 속성 중 일부가 빠지거나 불확실함 / 동기가 섞여 있음 / 결과가 의도와 다르게 되거나 문제를 일으킴 / [{{value}}]{{eulReul}} 일부만 실천함 / 상대나 상황이 정말 그것을 필요로 했는지 불확실함. 걸리는 점 없이 [{{value}}]{{eulReul}} 온전히 실천하면 전형적 사례가 되고, 다른 개념 이름이 깔끔하게 붙으면 관련 사례가 되므로 둘 다 피한다.",
+      "definition": "[이번에 만들 유형: 경계 사례] 덕목 정보의 정의적 속성 중 일부는 있고 일부는 없거나 불확실해서, [{{value}}]인지 아닌지 판단이 갈리는 사례. 판단하기 어려운 이유(걸리는 점)는 행위의 동기 / 대상과 범위 / 의도와 결과 / 책임과 실천의 한계 중 하나로 하고, 이야기 문장 안에 분명히 드러나야 한다. 걸리는 점 없이 [{{value}}]{{eulReul}} 온전히 실천하면 전형적 사례가 되고, 다른 개념 이름이 깔끔하게 붙으면 관련 사례가 되므로 둘 다 피한다.",
       "mind": "[인물의 마음 — 필수] 인물의 마음이나 상황에 [{{value}}]{{ro}} 볼 수 있는 점과 걸리는 점이 함께 드러나게 하라(예: [{{value}}]답게 하고 싶은 마음 반, 다른 이유 반). 어느 쪽이 옳은지 결말을 내리지 않는다.",
       "failChecks": [
         "걸리는 점 없이 [{{value}}]의 모습을 온전히 갖추고 결과도 좋다 → 전형 사례로 읽힌다.",
@@ -590,22 +590,20 @@ const DEFAULT_PROMPTS = {
   },
   "civicScopeLine": "[국가 맥락 — 필수] 공공장소에서 낯선 사람 한 명을 개인적으로 돕는 이야기로 쓰지 마라 — 배경만 다를 뿐 친구 맥락과 구별되지 않는다. 사회 제도·공공 규칙·사회 구성원으로서의 책임이 드러나는 요소를 하나 이상 넣어라(예: 공공 규칙을 지키는 것이 왜 다른 사람을 위한 일인지 드러나는 상황, 사회적 약자를 위한 시설·제도의 필요성을 느끼는 상황, 어려움을 겪는 지역 주민들을 여럿이 함께 돕는 상황). 인물이 한 명이더라도 그 행동이 '한 개인에 대한 친절'이 아니라 '사회 구성원으로서의 책임'으로 읽혀야 한다.",
   "internationalScopeLine": "[국제사회 맥락 — 필수] 서로 다른 나라 사이, 또는 서로 다른 나라 사람들 사이에서 [{{value}}]{{iGa}} 드러나는 상황으로 쓴다. 학생 한 명의 개인적인 이야기에 그치지 말고, 우리나라와 다른 나라의 관계나 여러 나라 사람이 함께 겪는 상황으로 구성하라. 분쟁의 정치적 원인이나 통계 수치는 언급하지 않는다.",
-  "counterDirectionA": "방향A: 학생의 뜻(\"{{def2}}\")대로 하는 것이 맞아 보이지만 현실에서는 판단이 어려운 상황. 학생이 \"항상 맞다\"고 생각한 근거가 흔들리는 지점을 겨냥한다. 결말: 인물이 어떻게 할지 정하기 전, 판단이 갈리는 순간에서 끝낸다.",
-  "counterDirectionB": "방향B: 학생의 뜻(\"{{def2}}\")대로 행동했더니 예상하지 못한 문제가 생기는 상황. 학생이 짐작한 예외보다 한 걸음 더 구체적인 지점을 겨냥한다. 결말: 뜻대로 행동한 뒤 생긴 문제까지 보여주고, 그 문제를 해결하거나 평가하지 않고 끝낸다.",
-  "counterTemplate": "너는 초등 {{grade}}학년 도덕 수업용 가상 상황을 만드는 작가다. 탐구 덕목은 [{{value}}]{{ida}}.\n{{virtueBlock}}\n\n학생이 정리한 [{{value}}]의 뜻: \"{{def2}}\"\n학생이 이 뜻에 대해 말한 이유: \"{{reasonText}}\"\n이 가상 상황의 목적은 학생이 자기 뜻을 다시 따져보게 하는 것이지, 정답을 알려주는 것이 아니다.\n\n[만드는 절차] (1) 학생의 뜻에 실제로 쓰인 핵심 조건어·한정어를 찾는다(예: '모든', '차별 없이', '대가 없이'처럼 학생이 실제로 쓴 단어). (2) 그 조건어가 지켜지기 어렵거나, 지켜도 문제가 생기는 지점을 찾는다. (3) 아래 방향에 맞춰 쓴다.\n{{directionDesc}}\n{{counterGradeStyle}}\n[인물의 마음 — 필수] 학생의 뜻대로 하려는 마음과, 그렇게 하기 어렵게 만드는 생각이 함께 드러나게 하라.\n{{avoidLine}}\n\n{{realismLine}}\n{{formatLine}}\n{{safetyRules}}\n\n{{finalCheckIntro}}\n{{checks}}",
+  "counterTemplate": "너는 초등 {{grade}}학년 도덕 수업용 가상 상황(경계 사례)을 만드는 작가다. 탐구 덕목은 [{{value}}]{{ida}}.\n{{virtueBlock}}\n\n학생이 정리한 [{{value}}]의 뜻: \"{{def2}}\"\n이 가상 상황은 학생이 자기 뜻의 적용 기준을 스스로 검토하게 하는 경계 사례다. 정답을 알려주는 것이 아니다.\n\n[만드는 절차] (1) 학생의 뜻에 실제로 쓰인 핵심 낱말·조건어를 찾는다(예: '모든', '차별 없이'처럼 학생이 실제로 쓴 말). (2) 그 뜻만으로는 [{{value}}]인지 판단하기 어려운 상황을 찾는다. (3) 판단하기 어려운 이유는 아래 한 가지로 한다.\n{{reasonDesc}}\n[경계 사례 — 필수] [{{value}}]에 부합한다고 볼 수 있는 점과 그렇지 않다고 볼 수 있는 점이 함께 이야기 문장 안에 분명히 드러나게 한다.\n[정답 암시 금지 — 필수] 이야기 안에서(인물의 생각으로도) [{{value}}]인지 아닌지 판단하거나 암시하지 않는다. 행동과 그 결과까지는 쓸 수 있지만, 결과를 평가하거나 인물이 그다음에 어떻게 할지는 쓰지 않는다.\n{{counterGradeStyle}}\n{{avoidLine}}\n\n{{realismLine}}\n{{formatLine}}\n{{safetyRules}}\n\n{{finalCheckIntro}}\n{{checks}}",
   "counterChecks": [
-    "학생의 뜻에 실제로 쓰인 핵심 조건어를 겨냥하지 않고, 어떤 학생의 뜻에도 똑같이 쓸 수 있는 뻔한 상황이다.",
-    "정해진 방향이나 결말 방식과 다르다."
+    "학생의 뜻에 실제로 쓰인 핵심 낱말을 겨냥하지 않고, 어떤 학생의 뜻에도 똑같이 쓸 수 있는 뻔한 상황이다.",
+    "[{{value}}]에 부합한다고 볼 수 있는 점과 그렇지 않다고 볼 수 있는 점 중 하나가 이야기에 분명히 드러나지 않는다.",
+    "판단하기 어려운 이유가 정해진 이유({{reasonName}})로 읽히지 않는다.",
+    "이야기나 인물의 생각이 [{{value}}]인지 아닌지 판단하거나 정답을 암시한다. 또는 결과를 평가하거나 인물이 그다음에 어떻게 할지까지 정한다."
   ],
-  "q1FollowupTemplate": "학생이 [{{value}}]에 대해 이런 뜻을 정리했다: \"{{def2}}\"\n학생은 방금 \"이 뜻이 모든 상황에서 맞는가?\"라는 질문에 \"{{choiceLabel}}\"라고 답했다.\n\n너는 학생이 정리한 뜻의 실제 문구(핵심 단어)를 직접 언급하면서, 왜 그렇게 생각했는지 구체적으로 캐묻는 소크라테스식 질문을 딱 한 문장만 만들어라. 판정하거나 힌트를 주지 말고, 학생 스스로 자기 생각의 근거를 설명하게 유도하라. 초등 {{grade}}학년이 이해할 수 있는 쉬운 말로 써라.\n\n**반드시 '~요?', '~나요?', '~어요?'처럼 끝나는 존댓말(해요체)로 써라. 반말은 절대 쓰지 마라.** (예: \"그렇게 생각한 이유가 뭐예요?\", \"~인 경우는 없을까요?\")\n\n{{questionStyle}}\n\n질문 문장 하나만 출력하고 다른 설명은 하지 마라.",
-  "q1ProbeTemplate": "학생이 [{{value}}]에 대해 이런 뜻을 정리했다: \"{{def2}}\"\n학생은 다음과 같이 답했다: \"{{answer}}\"\n\n이 답변을 잘 읽고, 아직 설명되지 않은 부분이나 빈틈, 혹은 이어서 캐물을 만한 지점을 하나 찾아서, 그걸 파고드는 후속 질문을 딱 한 문장만 만들어라. 학생이 한 말을 인정하거나 판정하지 말고(\"맞아요\",\"좋은 생각이에요\" 등 절대 금지), 그 답변에서 자연스럽게 이어지는 다음 질문을 던져서 학생이 한 번 더 생각해보게 하라. 초등 {{grade}}학년이 이해할 수 있는 쉬운 말로.\n\n**반드시 '~요?', '~나요?', '~어요?'처럼 끝나는 존댓말(해요체)로 써라. 반말은 절대 쓰지 마라.** (예: \"그럴 때는 어떻게 해야 할까요?\", \"그건 어떤 경우를 말하는 거예요?\")\n\n{{questionStyle}}\n\n질문 문장 하나만 출력하고 다른 설명은 하지 마라.",
   "questionStyles": {
-    "3": "[3~4학년 질문 방식 — 필수] 초등 {{grade}}학년이 바로 알아듣게, 20자 안팎의 짧은 한 문장으로 묻는다. '조건', '근거', '예외', '보편', '적용'처럼 어려운 낱말은 쓰지 않는다. 뜻 전체를 한꺼번에 묻지 말고, 학생의 뜻이나 답에 쓰인 낱말 하나를 골라 학교·집·놀이터 같은 익숙한 장면 하나에 대어 묻는다.\n(예시 — 실제 학생 답과 무관한 참고용) 학생의 뜻이 '친구를 도와주는 것'일 때: 이유를 물을 때는 \"'도와주는 것'이라고 쓴 까닭이 뭐예요?\", 파고들 때는 \"친구가 숙제를 대신 해 달라고 해도 도와줘야 할까요?\"",
-    "4": "[3~4학년 질문 방식 — 필수] 초등 {{grade}}학년이 바로 알아듣게, 20자 안팎의 짧은 한 문장으로 묻는다. '조건', '근거', '예외', '보편', '적용'처럼 어려운 낱말은 쓰지 않는다. 뜻 전체를 한꺼번에 묻지 말고, 학생의 뜻이나 답에 쓰인 낱말 하나를 골라 학교·집·놀이터 같은 익숙한 장면 하나에 대어 묻는다.\n(예시 — 실제 학생 답과 무관한 참고용) 학생의 뜻이 '친구를 도와주는 것'일 때: 이유를 물을 때는 \"'도와주는 것'이라고 쓴 까닭이 뭐예요?\", 파고들 때는 \"친구가 숙제를 대신 해 달라고 해도 도와줘야 할까요?\""
+    "3": "[3~4학년 질문 방식 — 필수] 초등 {{grade}}학년이 바로 알아듣게, 20자 안팎의 짧은 한 문장으로 묻는다. '조건', '근거', '예외', '보편', '적용'처럼 어려운 낱말은 쓰지 않는다. 학생의 이유에 쓰인 낱말 하나를 골라 묻는다.\n(예시 — 실제 학생 답과 무관한 참고용) 이유가 '도와줬으니까'일 때: \"'도와줬다'는 것을 친구 입장에서 보면 어떻게 보일까요?\"",
+    "4": "[3~4학년 질문 방식 — 필수] 초등 {{grade}}학년이 바로 알아듣게, 20자 안팎의 짧은 한 문장으로 묻는다. '조건', '근거', '예외', '보편', '적용'처럼 어려운 낱말은 쓰지 않는다. 학생의 이유에 쓰인 낱말 하나를 골라 묻는다.\n(예시 — 실제 학생 답과 무관한 참고용) 이유가 '도와줬으니까'일 때: \"'도와줬다'는 것을 친구 입장에서 보면 어떻게 보일까요?\""
   },
   "counterGradeStyles": {
-    "3": "[3~4학년 가상 상황 — 필수] 학생의 뜻에 쓰인 낱말 하나만 겨냥한다. 학교·집·놀이터처럼 초등 {{grade}}학년이 매일 겪는 장면 하나로 쓰고, 등장인물은 두 명 이내로 한다. 고민거리는 한 가지만 두고, 여러 문제가 겹치게 만들지 않는다.",
-    "4": "[3~4학년 가상 상황 — 필수] 학생의 뜻에 쓰인 낱말 하나만 겨냥한다. 학교·집·놀이터처럼 초등 {{grade}}학년이 매일 겪는 장면 하나로 쓰고, 등장인물은 두 명 이내로 한다. 고민거리는 한 가지만 두고, 여러 문제가 겹치게 만들지 않는다."
+    "3": "[3~4학년 가상 상황 — 필수] 학생의 뜻에 쓰인 낱말 하나만 겨냥한다. 학교·집·놀이터처럼 초등 {{grade}}학년이 매일 겪는 장면 하나로 쓰고, 등장인물은 두 명 이내로 한다. 고민거리는 한 가지만 둔다.",
+    "4": "[3~4학년 가상 상황 — 필수] 학생의 뜻에 쓰인 낱말 하나만 겨냥한다. 학교·집·놀이터처럼 초등 {{grade}}학년이 매일 겪는 장면 하나로 쓰고, 등장인물은 두 명 이내로 한다. 고민거리는 한 가지만 둔다."
   },
   "judgeTemplate": "너는 초등 {{grade}}학년 도덕 수업 자료를 검수하는 교사다. 아래 이야기가 수업 목적에 맞는지 판정하라.\n탐구 덕목: [{{value}}]\n{{virtueBlock}}\n이야기의 용도: {{kindLabel}}\n\n[이야기]\n{{story}}\n\n[실패 조건 — 모든 이야기 공통]\n{{common}}\n\n[실패 조건 — 이 용도]\n{{criteria}}\n\n[판정 원칙] 위 실패 조건 중 하나에 분명히 해당할 때만 '실패'로 판정하라. 문체·표현 취향·사소한 어색함은 실패 사유가 아니다. 확신이 서지 않으면 '통과'로 판정하라.\n\n[출력 형식 — 반드시 지킬 것] 아래 두 형식 중 하나만 출력하고, 다른 말은 쓰지 마라.\n판정: 통과\n또는\n판정: 실패\n문제: (어떤 실패 조건에 어떻게 해당하는지 한 문장)",
   "judgeKindLabels": {
@@ -614,7 +612,7 @@ const DEFAULT_PROMPTS = {
     "related": "관련 사례 — [{{value}}]처럼 보이지만 실제로는 이름이 분명한 다른 개념의 사례여야 한다.",
     "borderline": "경계 사례 — [{{value}}]인지 아닌지 판단이 갈려야 한다. 원래 애매해야 하므로 애매함 자체는 실패 사유가 아니다.",
     "situation": "관계 속 이야기 — [{{context}}] 관계이기 때문에 [{{value}}]{{iGa}} 중요해지거나 어려워지는 지점을 보여줘야 한다.",
-    "counter": "가상 상황 — 학생이 정리한 [{{value}}]의 뜻(\"{{def2}}\")을 다시 따져보게 하는 상황이어야 한다. {{directionDesc}}"
+    "counter": "가상 상황(경계 사례) — 학생이 정리한 [{{value}}]의 뜻(\"{{def2}}\")만으로는 [{{value}}]인지 판단하기 어려운 상황이어야 한다. 판단하기 어려운 이유: {{reasonDesc}} 원래 판단이 갈려야 하므로 애매함 자체는 실패 사유가 아니다."
   },
   "retryFeedbackTemplate": "\n\n[직전 초안의 문제 — 반드시 고칠 것] 직전에 쓴 초안이 검수에서 다음 이유로 탈락했다: {{reason}}\n탈락한 초안: \"{{draft}}\"\n이 문제를 고친, 완전히 새로운 이야기를 써라. 탈락한 초안의 문장이나 설정을 재사용하지 마라.",
   "gradeStyles": {
@@ -1185,7 +1183,14 @@ const DEFAULT_PROMPTS = {
       "notes": "",
       "extraFailChecks": {}
     }
-  ]
+  ],
+  "counterReasons": {
+    "동기": "행위의 동기 — [{{value}}]답게 보이는 행동에 다른 이유(칭찬받고 싶은 마음, 손해를 피하고 싶은 마음 등)가 함께 섞여 있다.",
+    "대상과 범위": "대상과 범위 — 누구에게, 어디까지 [{{value}}]{{eulReul}} 베풀어야 하는지가 걸린다(가까운 사람과 먼 사람 사이에서 고민하거나, 한정된 도움을 나눠야 할 때 등).",
+    "의도와 결과": "의도와 결과 — 좋은 뜻으로 한 행동이 뜻밖의 문제를 일으키거나 상대에게 정말 도움이 되었는지 불확실하다.",
+    "책임과 실천의 한계": "책임과 실천의 한계 — 하고 싶은 마음은 있지만 할 수 있는 일이 일부에 그치거나, 끝까지 책임지기 어렵다."
+  },
+  "probeTemplate": "학생이 [{{value}}]에 대해 정리한 뜻: \"{{def2}}\"\n학생에게 보여준 가상 상황(경계 사례): \"{{story}}\"\n학생이 고른 판단: \"{{choiceLabel}}\"\n학생이 쓴 판단 이유: \"{{reason}}\"\n\n너는 학생이 사용한 판단 기준을 스스로 다시 검토하게 하는 소크라테스식 질문을 딱 한 문장만 만든다.\n- 학생의 이유에 쓰인 낱말을 직접 짚고, 그 기준을 이 상황의 다른 쪽 측면([{{value}}]{{ro}} 볼 수 있는 점 또는 그렇게 보기 어려운 점)에 비추어 생각하게 한다. 이유가 양쪽을 모두 짚었으면 그 기준 낱말이 이 상황의 어디까지 들어맞는지 묻는다.\n- '어떻게', '왜', '어떤 점에서'로 묻고, '~아닐까요?', '~지 않나요?'처럼 답을 정해 둔 꼴로 묻지 않는다.\n- 특정한 결론이나 뜻의 수정을 유도하지 않고, 학생의 판단을 칭찬·평가·판정하지 않는다(\"맞아요\", \"좋은 생각이에요\" 등 절대 금지).\n- 판단하기 어려운 이유의 종류 이름(동기, 대상과 범위 등)이나 사례 유형 이름을 쓰지 않는다.\n초등 {{grade}}학년이 이해할 수 있는 쉬운 말로 쓴다.\n\n**반드시 '~요?', '~나요?', '~어요?'처럼 끝나는 존댓말(해요체)로 써라. 반말은 절대 쓰지 마라.**\n\n{{questionStyle}}\n\n질문 문장 하나만 출력하고 다른 설명은 하지 마라."
 };
 let PROMPTS = DEFAULT_PROMPTS;
 async function loadPrompts() {
@@ -1226,10 +1231,6 @@ const LESSON = { virtue: null, grade: null };
 function effectiveGrade() {
   const p = LESSON.virtue ? findProfile(LESSON.virtue) : currentProfile();
   return p ? p.grade : (LESSON.grade || null);
-}
-// 3~4학년 수업은 활동3의 소크라테스식 질문을 1개만 한다(두 번째 파고드는 질문 생략).
-function skipProbeActive() {
-  return ['3', '4'].includes(effectiveGrade());
 }
 
 function templateGlobals() {
@@ -1331,7 +1332,7 @@ function screenStudentInput(text) {
   const t = String(text || '');
   if (CRISIS_PATTERNS.some(re => re.test(t))) {
     return { ok: false, kind: 'crisis',
-      message: '💛 마음이 많이 힘든 것 같아요. 이런 이야기는 AI보다 선생님이나 믿을 수 있는 어른에게 꼭 말해 주세요. 지금 선생님께 손을 들어 알려도 괜찮아요.\n\n수업 활동을 이어 가려면 입력한 글을 고쳐서 다시 보내 주세요.' };
+      message: '💛 마음이 많이 힘든 것 같아요. 이런 이야기는 AI보다 선생님이나 믿을 수 있는 어른에게 꼭 말해 주세요. 지금 선생님께 손을 들어 알려도 괜찮아요. (청소년 상담 전화 1388도 언제든 도와줄 수 있어요.)\n\n수업 활동을 이어 가려면 입력한 글을 고쳐서 다시 보내 주세요.' };
   }
   const squeezed = t.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣ]/g, '');
   const cleaned = PROFANITY_ALLOW.reduce((s, w) => s.split(w).join(''), squeezed);
@@ -1420,7 +1421,7 @@ function avoidLine(priorSummaries) {
 // ---------- 실패 조건(생성 규칙 = 판정 기준) ----------
 // 이야기를 만드는 AI의 "최종 점검"과 판정 AI의 "실패 조건"은 prompts.json의 같은 목록에서 나온다.
 // 한쪽만 고쳐서 생성 규칙과 판정 기준이 어긋나는 일이 없도록 하기 위함이다.
-// spec = { kind: 'model'|'contrary'|'related'|'borderline'|'situation'|'counter', value, context?, def2?, direction? }
+// spec = { kind: 'model'|'contrary'|'related'|'borderline'|'situation'|'counter', value, context?, def2?, reason? }
 function kindChecks(spec) {
   let base;
   if (spec.kind === 'situation') {
@@ -1436,7 +1437,7 @@ function bulletList(items, vars) {
   return items.map(t => '- ' + fillTemplate(t, vars)).join('\n');
 }
 function checkVars(spec) {
-  return { value: spec.value, context: spec.context || '', def2: spec.def2 || '' };
+  return { value: spec.value, context: spec.context || '', def2: spec.def2 || '', reasonName: spec.reason || '' };
 }
 function allChecks(spec) {
   const vars = checkVars(spec);
@@ -1477,25 +1478,29 @@ function situationPrompt(value, context, priorSummaries, easier) {
   });
 }
 
-function q1FollowupPrompt(value, def2, choiceLabel) {
-  return fillTemplate(PROMPTS.q1FollowupTemplate, { value, def2, choiceLabel });
+// 활동3 가상 상황(경계 사례)의 '판단하기 어려운 이유' 네 가지. 두 상황은 서로 다른 이유로 만든다.
+const COUNTER_REASONS = ['동기', '대상과 범위', '의도와 결과', '책임과 실천의 한계'];
+function counterReasonDesc(reason) {
+  return fillTemplate((PROMPTS.counterReasons || {})[reason] || reason);
+}
+function pickReasons(n, exclude = []) {
+  const pool = COUNTER_REASONS.filter(r => !exclude.includes(r));
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  return pool.slice(0, n);
 }
 
-function q1ProbePrompt(value, def2, answer) {
-  return fillTemplate(PROMPTS.q1ProbeTemplate, { value, def2, answer });
-}
-
-function counterDirectionDesc(direction, def2) {
-  return fillTemplate(direction === 'A' ? PROMPTS.counterDirectionA : PROMPTS.counterDirectionB, { def2 });
-}
-
-function counterPrompt(value, def2, direction, reasonText, priorSummaries) {
+function counterPrompt(value, def2, reason, priorSummaries) {
   return fillTemplate(PROMPTS.counterTemplate, {
-    value, def2, reasonText,
-    directionDesc: counterDirectionDesc(direction, def2),
+    value, def2,
+    reasonDesc: counterReasonDesc(reason),
     ...sharedParts(value, priorSummaries, false),
-    checks: allChecks({ kind: 'counter', value, def2, direction }),
+    checks: allChecks({ kind: 'counter', value, def2, reason }),
   });
+}
+
+// 학생의 판단 이유에 쓰인 기준을 되묻는 소크라테스식 질문(가상 상황마다 한 번).
+function probePrompt(value, def2, story, choiceLabel, reason) {
+  return fillTemplate(PROMPTS.probeTemplate, { value, def2, story, choiceLabel, reason });
 }
 
 
@@ -1503,13 +1508,13 @@ function counterPrompt(value, def2, direction, reasonText, priorSummaries) {
 // ---------- 사례 검수(판정 AI) ----------
 // 학생에게 보여줄 모든 이야기는 "생성 → 판정 → (탈락 시) 문제를 알려주고 재생성" 과정을 거친다.
 // spec = { kind: 'model'|'contrary'|'related'|'borderline'|'situation'|'counter',
-//          value, context?(활동2), def2?, direction?(활동3) }
+//          value, context?(활동2), def2?, reason?(활동3) }
 const MAX_GEN_ATTEMPTS = 2; // 최초 생성 1회 + 재생성 1회. 더 늘리면 학생 대기 시간이 길어진다.
 
 function judgePrompt(story, spec) {
   const vars = {
     ...checkVars(spec),
-    directionDesc: spec.kind === 'counter' ? counterDirectionDesc(spec.direction, spec.def2 || '') : '',
+    reasonDesc: spec.kind === 'counter' ? counterReasonDesc(spec.reason) : '',
   };
   return fillTemplate(PROMPTS.judgeTemplate, {
     value: spec.value,
@@ -2098,7 +2103,7 @@ function renderCaseInputArea() {
   const trow = document.createElement('div');
   trow.className = 'textrow';
   const ta = document.createElement('textarea');
-  ta.placeholder = '내 생각을 적어보세요';
+  ta.placeholder = '내 생각을 적어 보내면 다음으로 넘어갈 수 있어요';
   const btn = document.createElement('button');
   btn.className = 'send';
   btn.innerHTML = '&#10148;';
@@ -2192,6 +2197,7 @@ async function onContextPick(ctx, easier = false) {
   state.situationHistory.push(text);
   await sayAI(`📖 [${ctx}] ${PROMPTS.situationContexts[ctx] ? '관계 속 ' : ''}이야기예요:`);
   await sayAI(text, { box: true });
+  await sayTodo('이야기를 읽고 새롭게 발견한 [' + state.value + ']의 의미를 활동지 ④에 정리해 보세요.');
   renderAct2SituationInput(ctx);
 }
 
@@ -2233,7 +2239,6 @@ function renderAct2SituationInput(ctx) {
 
 async function onAct2Next() {
   pushUser('다음 질문으로 넘어갈게요');
-  await sayTodo('위의 이야기를 통해 새롭게 발견한 [' + state.value + ']의 의미를 활동지 ④에 정리해보세요.');
   await sayAI(`🖊 처음 정리한 뜻은 "${state.def1}" 였어요. 관계 속 탐구를 바탕으로 [${state.value}]의 뜻을 다시 정리해서 적어 주세요.`);
   state.step = 'act2_def2';
   setInputText('다시 정리한 뜻을 적어보세요 (개인정보는 쓰지 않아요)', onDef2Submit);
@@ -2260,67 +2265,24 @@ function onAct3Start() {
   ]);
 }
 
-const Q1_FALLBACK = {
-  1: '어떤 점 때문에 이 뜻이 어떤 상황에서도 다 맞을 거라고 생각했어요?',
-  2: '어떤 점 때문에 맞지 않는 경우도 있을 것 같다고 생각했어요? 어떤 상황이 떠올랐는지 말해줄 수 있나요?',
-  3: '어떤 부분이 헷갈렸는지 말해줄 수 있나요?',
-};
-
 async function onQ1Pick(n) {
   const labels = { 1: '모든 상황에서 맞는다', 2: '맞지 않는 상황이 있을 수도 있다', 3: '모르겠다' };
   pushUser(labels[n]);
   state.q1choice = n;
-  if (n === 1) state.direction = 'A';
-  else if (n === 2) state.direction = 'B';
-  setBusy(true);
-  const tid = 't' + Date.now();
-  pushThinking(tid);
-  let q = Q1_FALLBACK[n];
-  try { q = await ask(q1FollowupPrompt(state.value, state.def2, labels[n]), 'quick'); } catch (e) {}
-  popThinking(tid);
-  setBusy(false);
-  pushAI('🤔 ' + q);
-  setInputText('내 생각을 적어보세요 (개인정보는 쓰지 않아요)', onQ1FollowupSubmit);
-}
-
-// ④ 학생의 첫 답변에 이어, ⑤ 그 답변의 빈틈을 한 번 더 캐묻는 소크라테스식 두 번째 질문.
-async function onQ1FollowupSubmit(v) {
-  // 3~4학년 "질문 1개" 옵션: 파고드는 두 번째 질문 없이 바로 가상 상황 단계로 간다.
-  if (skipProbeActive()) {
-    pushUser(v);
-    state.q1answer1 = v;
-    await finishQ1Dialogue('');
-    return;
-  }
-  pushUser(v);
-  state.q1answer1 = v;
-  setBusy(true);
-  const tid = 't' + Date.now();
-  pushThinking(tid);
-  let q2 = '그 생각을 조금 더 자세히 들려줄 수 있을까요?';
-  try { q2 = await ask(q1ProbePrompt(state.value, state.def2, v), 'quick'); } catch (e) {}
-  popThinking(tid);
-  setBusy(false);
-  pushAI('🤔 ' + q2);
-  setInputText('내 생각을 적어보세요 (개인정보는 쓰지 않아요)', onQ1ProbeSubmit);
-}
-
-// ⑥ 학생의 두 번째 답변까지 받은 뒤 ⑦ 가상 상황으로 넘어간다.
-async function onQ1ProbeSubmit(v) {
-  pushUser(v);
-  await finishQ1Dialogue(v);
-}
-
-async function finishQ1Dialogue(v) {
-  state.q1answer2 = v;
-  state.q1reason = (state.q1answer1 + ' ' + state.q1answer2).trim();
-  if (state.direction === null) {
-    state.direction = /맞|어렵|헷갈리는게 없|그래도/.test(state.q1reason) ? 'A' : 'B';
-  }
   await sayTodo('지금까지 저와 함께 나눈 대화를 활동지 ⑦에 정리해 주세요.');
   await sayAI('👀 이제 가상 상황을 만나러 가볼까요?');
   state.step = 'act3_situation';
   setInputChips([{ label: '🟡 가상 상황 보기', onClick: onAct3Situation }]);
+}
+
+function counterPriorSummaries(extra = []) {
+  // 활동1 사례 + 활동2 상황 + 지금까지 나온 활동3 가상 상황을 전부 합쳐서 겹치지 않게 한다.
+  return [
+    ...state.cases.map(c => summarize(c.text)),
+    ...state.situationHistory.map(s => summarize(s)),
+    ...state.counterHistory.map(s => summarize(s)),
+    ...extra.map(s => summarize(s)),
+  ];
 }
 
 async function onAct3Situation(userMsg) {
@@ -2328,31 +2290,19 @@ async function onAct3Situation(userMsg) {
   setBusy(true);
   const tid = 't' + Date.now();
   pushThinking(tid);
-  // 활동1 사례 + 활동2 상황 + 지금까지 나온 활동3 가상 상황을 전부 합쳐서 겹치지 않게 한다.
-  const priorSummaries = [
-    ...state.cases.map(c => summarize(c.text)),
-    ...state.situationHistory.map(s => summarize(s)),
-    ...state.counterHistory.map(s => summarize(s)),
-  ];
-  let textA, textB;
+  const priorSummaries = counterPriorSummaries();
+  // 두 가상 상황은 판단하기 어려운 이유를 서로 다르게 정한다(순서도 무작위).
+  const reasons = pickReasons(2);
   // 상황1·상황2를 순서대로 만들면 그만큼 오래 걸리므로, 동시에 병렬로 요청한다.
-  // (B가 A를 회피 목록에 참고하지 못하게 되는 대신, 방향 자체가 서로 달라서 겹칠 위험은 낮다.)
-  [textA, textB] = await Promise.all([
-    generateVerified(counterPrompt(state.value, state.def2, 'A', state.q1reason, priorSummaries),
-      { kind: 'counter', value: state.value, def2: state.def2, direction: 'A' })
-      .catch(() => '(이야기를 만드는 데 문제가 생겼어요.)'),
-    generateVerified(counterPrompt(state.value, state.def2, 'B', state.q1reason, priorSummaries),
-      { kind: 'counter', value: state.value, def2: state.def2, direction: 'B' })
-      .catch(() => '(이야기를 만드는 데 문제가 생겼어요.)'),
-  ]);
+  const texts = await Promise.all(reasons.map(r =>
+    generateVerified(counterPrompt(state.value, state.def2, r, priorSummaries),
+      { kind: 'counter', value: state.value, def2: state.def2, reason: r })
+      .catch(() => '(이야기를 만드는 데 문제가 생겼어요.)')));
   popThinking(tid);
   setBusy(false);
-  state.counterHistory.push(textA, textB);
-  // 방향(A/B)을 학생마다 항상 같은 순서로 보여주면 "1번은 늘 이런 상황"이라는 고정관념이
-  // 생길 수 있으므로, 제시 순서를 무작위로 섞는다.
-  const flip = Math.random() < 0.5;
-  state.situationTexts = flip ? [textB, textA] : [textA, textB];
-  state.situationDirections = flip ? ['B', 'A'] : ['A', 'B'];
+  state.counterHistory.push(...texts);
+  state.situationTexts = texts;
+  state.situationReasons = reasons;
   state.currentSituationIdx = 0;
   await showCurrentSituation();
 }
@@ -2364,30 +2314,28 @@ async function showCurrentSituation() {
   renderSituationJudgmentChoice();
 }
 
-// 가상 상황(현재 보고 있는 것 하나만) 다른 버전으로 재생성.
+// 가상 상황(현재 보고 있는 것 하나만) 다른 버전으로 재생성 — 판단하기 어려운 이유도 바로 앞 것과 다르게 바꾼다.
 async function onRegenCurrentSituation() {
   pushUser('다른 가상 상황으로 보여주세요');
+  inputzoneEl.innerHTML = ''; // 새 상황이 나오기 전에 이전 상황의 판단 버튼을 누르지 못하게 한다
   setBusy(true);
   const tid = 't' + Date.now();
   pushThinking(tid);
   const idx = state.currentSituationIdx;
   const otherText = state.situationTexts[1 - idx];
-  const priorSummaries = [
-    ...state.cases.map(c => summarize(c.text)),
-    ...state.situationHistory.map(s => summarize(s)),
-    ...state.counterHistory.map(s => summarize(s)),
-    ...(otherText ? [summarize(otherText)] : []),
-  ];
+  const priorSummaries = counterPriorSummaries(otherText ? [otherText] : []);
+  const used = [state.situationReasons[idx], state.situationReasons[1 - idx]].filter(Boolean);
+  const reason = pickReasons(1, used)[0] || pickReasons(1, [state.situationReasons[idx]])[0];
   let text;
-  const dir = state.situationDirections[idx];
   try {
-    text = await generateVerified(counterPrompt(state.value, state.def2, dir, state.q1reason, priorSummaries),
-      { kind: 'counter', value: state.value, def2: state.def2, direction: dir });
+    text = await generateVerified(counterPrompt(state.value, state.def2, reason, priorSummaries),
+      { kind: 'counter', value: state.value, def2: state.def2, reason });
   }
   catch (e) { text = '(이야기를 만드는 데 문제가 생겼어요.)'; }
   popThinking(tid);
   setBusy(false);
   state.situationTexts[idx] = text;
+  state.situationReasons[idx] = reason;
   state.counterHistory.push(text);
   await sayAI(`🟡 다른 가상 상황${idx + 1}이에요:`);
   await sayAI(text, { box: true, tag: `가상 상황${idx + 1}` });
@@ -2422,12 +2370,31 @@ function renderSituationJudgmentChoice() {
 function onJudgmentChoice(label) {
   pushNote(`🤔 내가 정리한 [${state.value}]의 뜻을 적용한 결과를 아래에서 골라보세요.`); // 저장 파일용
   pushUser(label);
+  state.currentChoice = label;
   pushAI('✏️ 위와 같은 판단을 한 이유를 적어보세요.');
-  setInputText('이유를 적어보세요', onJudgmentReasonSubmit);
+  setInputText('이유를 적어보세요 (개인정보는 쓰지 않아요)', onJudgmentReasonSubmit);
 }
 
-// 판단 이유 제출 — AI는 이 판단에 대해 옳고 그름을 평가하거나 반응하지 않고 곧바로 다음 단계로 진행한다.
+// 판단 이유 제출 — AI는 판단의 옳고 그름을 평가하지 않고, 학생이 쓴 이유의 판단 기준을 되묻는 질문을 한 번 한다.
+const PROBE_FALLBACK = '그렇게 판단한 기준이 이 상황의 다른 면에도 들어맞는지 어떻게 생각하나요?';
 async function onJudgmentReasonSubmit(v) {
+  pushUser(v);
+  setBusy(true);
+  const tid = 't' + Date.now();
+  pushThinking(tid);
+  let q = PROBE_FALLBACK;
+  try {
+    const idx = state.currentSituationIdx;
+    q = (await ask(probePrompt(state.value, state.def2, state.situationTexts[idx], state.currentChoice, v), 'quick')) || PROBE_FALLBACK;
+  } catch (e) {}
+  popThinking(tid);
+  setBusy(false);
+  pushAI('🤔 ' + q.replace(/^🤔\s*/, ''));
+  setInputText('내 생각을 적어보세요 (개인정보는 쓰지 않아요)', onProbeAnswerSubmit);
+}
+
+// 되묻는 질문에 대한 답 — AI는 반응하지 않고 다음 가상 상황(또는 마무리)으로 넘어간다.
+async function onProbeAnswerSubmit(v) {
   pushUser(v);
   if (state.currentSituationIdx === 0) {
     state.currentSituationIdx = 1;
@@ -2438,7 +2405,7 @@ async function onJudgmentReasonSubmit(v) {
 }
 
 async function finishAct3() {
-  await sayTodo('지금까지 저와 나눈 대화를 활동지 ⑧에 정리해 주세요.');
+  await sayTodo('지금까지 저와 나눈 대화를 활동지 ⑦과 ⑧에 정리해 주세요.');
   await sayAI('🎉 지금부터는 스스로 해보는 시간이에요. 끝까지 최선을 다해 볼까요?🎉');
   await sayAI('💾 화면 위의 [대화 저장하기] 버튼을 눌러 지금까지의 대화를 파일로 저장하고, 선생님이 알려 주신 방법으로 공유해 보세요!');
   state.step = 'end';
