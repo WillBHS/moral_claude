@@ -1453,7 +1453,7 @@ function definitionMessage(kind, value, step) {
   let msg = base;
   if (defRejectStreak >= 2) {
     msg += `\n\n✏️ 이렇게 써 볼 수 있어요: ${V}${eunNeun} (누구)를 (어떻게) 하는 (마음 / 태도 / 행동)이다.`
-      + `\n📒 ${step === 'def2' ? '활동지 ④에 정리한 내용' : '활동지 ②에 쓴 내 생각'}을 다시 읽어 보세요.`;
+      + `\n📒 ${step === 'def2' ? '활동지 ④에 요약한 이야기' : '활동지 ①·②에 쓴 내용'}을 다시 읽어 보세요.`;
   }
   if (defRejectStreak >= 3) msg += '\n\n✋ 어렵다면 손을 들어 선생님께 도움을 요청하세요.';
   return msg;
@@ -2268,9 +2268,9 @@ async function onCaseAnswer(v) {
   pushAI(pickMirrorReply());
   await sleep(300);
 
+  await sayTodo('이 이야기를 활동지 ②에 한 줄로 요약해 보세요. 질문에 대한 내 생각은 채팅창에만 쓰면 돼요.');
   const isLast = state.caseIdx === 3;
   if (!isLast) {
-    await sayTodo('함께 탐구한 내용을 활동지에도 기록했나요?');
     const nextOrdinal = ['두','세','네'][state.caseIdx];
     setInputChips([{ label: `👀 ${nextOrdinal} 번째 사례 만나러 가기`, onClick: () => {
       pushUser(`${nextOrdinal} 번째 사례 만나러 갈게요`);
@@ -2326,7 +2326,7 @@ async function onContextPick(ctx, easier = false) {
   state.situationHistory.push(text);
   await sayAI(`📖 [${ctx}] ${PROMPTS.situationContexts[ctx] ? '관계 속 ' : ''}이야기예요:`);
   await sayAI(text, { box: true });
-  await sayTodo('이야기를 읽고 새롭게 발견한 [' + state.value + ']의 의미를 활동지 ④에 정리해 보세요.');
+  await sayTodo('이야기를 활동지 ④에 한 줄로 요약해 보세요.');
   renderAct2SituationInput(ctx);
 }
 
@@ -2368,7 +2368,7 @@ function renderAct2SituationInput(ctx) {
 
 async function onAct2Next() {
   pushUser('다음 질문으로 넘어갈게요');
-  await sayAI(`🖊 처음 정리한 뜻은 "${state.def1}" 였어요. 관계 속 탐구를 바탕으로 [${state.value}]의 뜻을 다시 정리해서 적어 주세요.`);
+  await sayAI(`🖊 처음 정리한 뜻은 "${state.def1}" 였어요. 관계 속 이야기에서 새롭게 발견한 점을 담아 [${state.value}]의 뜻을 다시 정리해서 적어 주세요.`);
   state.step = 'act2_def2';
   setInputText('다시 정리한 뜻을 적어보세요 (개인정보는 쓰지 않아요)', onDef2Submit, { validate: v => validateDefinition(v, 'def2') });
 }
@@ -2379,7 +2379,6 @@ async function onDef2Submit(v) {
   state.def2AIChecked = lastDefAIChecked;
   await sayAI(`📝 새로운 뜻은 "${v}"에요.`);
   await sayTodo('활동지 ⑤에 정리하고 짝과 비교해 보세요.');
-  await sayTodo('기존의 뜻에서 달라진 점이 있다면 활동지 ⑥에 써보세요.');
   state.step = 'act3_q1';
   setInputChips([{ label: '🟡 활동3 시작하기', onClick: onAct3Start }]);
 }
@@ -2406,7 +2405,6 @@ async function onQ1Pick(n) {
     3: `🤔 괜찮아요. 내가 정리한 [${state.value}]의 뜻을 가상 상황에 적용해 보면서 함께 생각해 봐요.`,
   };
   await sayAI(bridge[n]);
-  await sayTodo('내가 고른 대답을 활동지 ⑦에 표시해 주세요.');
   await sayAI('👀 이제 가상 상황을 만나러 가볼까요?');
   state.step = 'act3_situation';
   setInputChips([{ label: '🟡 가상 상황 보기', onClick: onAct3Situation }]);
@@ -2580,6 +2578,7 @@ async function onJudgmentReasonSubmit(v) {
 // 되묻는 질문에 대한 답 — AI는 반응하지 않고 다음 가상 상황(또는 마무리)으로 넘어간다.
 async function onProbeAnswerSubmit(v) {
   pushUser(v);
+  await sayTodo(`가상 상황${state.currentSituationIdx + 1}${state.currentSituationIdx === 0 ? '을' : '를'} 활동지 ⑥에 한 줄로 요약하고, 내 판단에 표시해 보세요.`);
   if (state.currentSituationIdx === 0) {
     state.currentSituationIdx = 1;
     await showCurrentSituation();
@@ -2589,7 +2588,6 @@ async function onProbeAnswerSubmit(v) {
 }
 
 async function finishAct3() {
-  await sayTodo('지금까지 저와 나눈 대화를 활동지 ⑦과 ⑧에 정리해 주세요.');
   await sayAI('🎉 지금부터는 스스로 해보는 시간이에요. 끝까지 최선을 다해 볼까요?🎉');
   await sayAI('💾 화면 위의 [대화 저장하기] 버튼을 눌러 지금까지의 대화를 파일로 저장하고, 선생님이 알려 주신 방법으로 공유해 보세요!');
   state.step = 'end';
