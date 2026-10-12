@@ -8,7 +8,12 @@ const crypto = require('crypto');
 const SERVER_ROOM_MARKER = '@SERVER_KEY';
 const DEFAULT_ROOM_CALL_LIMIT = 6000; // 방 하나에서 쓸 수 있는 AI 호출 횟수(한 학급 2시간 수업의 약 4배)
 
+// 서버 키 모드 사용 여부. false이면 환경변수에 키가 있어도 무시하고, 교사가 첫 화면에서 자기 Claude API 키를 입력해 방을 만든다.
+// 다시 켜려면 true로 바꾸고 GitHub에 올리면 된다.
+const SERVER_KEY_MODE = false;
+
 function serverKey(env = process.env) {
+  if (!SERVER_KEY_MODE) return null;
   const k = (env.ANTHROPIC_API_KEY || '').trim();
   return k.length >= 10 ? k : null;
 }
