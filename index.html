@@ -499,12 +499,13 @@ const DEFAULT_PROMPTS = {
     "초등 {{grade}}학년이 한 번 읽고 이해하기 어렵다(한 문장에 여러 사건을 길게 이어 붙인 문장 등).",
     "마음과 행동이 향하는 대상이 덕목의 정의에 맞지 않는다(예: 사람을 향해야 하는 덕목인데 동물만 향함).",
     "인물의 생각이나 마음이 전혀 드러나지 않고 행동만 나열되어 있다.",
-    "이야기 안에서 교훈이나 정답, 덕목의 정의를 직접 말해주거나, 서술자가 인물의 행동을 평가한다(예: '~하기보다는 그저 ~해 버렸다', '~한 것은 옳은 일이었다')."
+    "이야기 안에서 교훈이나 정답, 덕목의 정의를 직접 말해주거나, 서술자가 인물의 행동을 평가한다(예: '~하기보다는 그저 ~해 버렸다', '~한 것은 옳은 일이었다').",
+    "문장 안의 내용이 서로 앞뒤가 맞지 않거나 어색하다(예: '새 신발이 없어서 운동화를 신고 다닌다')."
   ],
   "realismLine": "[현실성 — 필수] 이야기가 꼭 학생의 일상일 필요는 없다. 학교·가정·동네의 일일 수도 있고, 사회나 국제사회의 일(예: 다른 나라에 큰 지진이 나자 여러 나라가 구호대와 구호 물품을 보낸 일)일 수도 있다. 기준은 '이 주인공이 이 규모의 일을 실제로 할 법한가'다.\n- 초등학생이 주인공이면, 초등학생이 실제로 할 수 있는 크기의 일만 하게 한다.\n- 나라·단체·어른이 할 일이면, 그 일을 실제로 하는 사람들(정부, 구호대, 의료진, 시민, 선생님 등)을 주인공으로 쓴다. 초등학생에게 어른 규모의 일을 시키지 않는다.\n- 실제 나라 이름은 써도 되지만, 실제로 있었던 특정 사건처럼 날짜·숫자·단체 이름을 붙여 사실을 지어내지 않는다.\n- 우연이 여러 번 겹치거나 사건을 과장한 설정, 인물이 교훈을 말하는 혼잣말은 쓰지 않는다.\n- 이야기와 상관없는 장면으로 시작하지 않는다. 첫 문장부터 덕목과 관련된 일이 벌어지게 쓴다. 먼 곳의 일은 그 일을 직접 하는 사람(구호대, 봉사자 등)을 주인공으로 쓰거나, 가족과 저녁 뉴스를 보는 것처럼 실제로 소식을 접하는 흔한 계기로 쓴다.\n- 장소·기관·행사는 초등학생이 이름만 듣고 바로 아는 흔한 것만 쓴다: 집, 학교(교실·운동장·급식실·도서실), 놀이터, 공원, 아파트, 동네 가게·시장·마트, 도서관, 행정복지센터(주민센터), 복지관, 병원, 버스·지하철, 학교 행사(운동회·학예회·현장체험학습), 동네 축제. 사회·국제의 일은 정부, 구호대, 의료진, 소방관처럼 누구나 아는 사람·기관을 쓴다. 학생에게 낯선 시설이나 기관, 그런 곳에서 흔히 열리지 않는 행사(예: 특정 시설에서 여는 축구 대회)는 쓰지 않는다.",
   "formatLine": "[작성 형식] 이야기 본문만 정확히 2~3문장으로 쓴다. 한 문장은 짧게(50자 안팎, 길어도 70자 이내) 쓰고, 이야기 전체는 180자 이내로 쓴다. 한 문장에 사건을 여러 개 이어 붙이지 않는다(쉼표로 길게 잇지 말고 마침표로 끊는다). 장면을 자세히 묘사하거나 뒷이야기를 덧붙이지 않는다. 제목·설명·따옴표·점검 과정, 사례 유형이나 개념 이름 표시(예: '개념: ○○')는 출력하지 않는다. 인물의 마음을 나타내는 말은 이 이야기의 상황에 맞게 새로 쓰고, 어디에나 붙일 수 있는 상투적인 문구는 쓰지 않는다.\n{{gradeStyle}}",
   "finalCheckIntro": "[최종 점검 — 출력하지 말고 속으로만 수행] 초안을 쓴 뒤, 아래 중 하나라도 해당하면 처음부터 다시 써라. 통과한 최종 이야기만 출력하라.",
-  "avoidLineTemplate": "[앞 이야기와 겹치지 않기 — 필수] 아래는 지금까지 이 학생에게 보여준 이야기들이다. 장소, 사건의 종류(예: 길을 잃은 사람, 짐을 떨어뜨린 사람, 표를 못 사는 사람), 첫 문장을 여는 방식, 마음을 표현하는 문구가 겹치지 않게, 완전히 다른 장면으로 새 이야기를 써라. 등장인물 이름만 바꾸는 것은 새 이야기가 아니다.\n{{list}}",
+  "avoidLineTemplate": "[앞 이야기와 겹치지 않기 — 필수] 아래는 지금까지 이 학생에게 보여준 이야기들이다. 장소, 사건의 종류(예: 길을 잃은 사람, 짐을 떨어뜨린 사람, 표를 못 사는 사람), 인물이 망설이거나 고민하는 내용(예: 기부한 것이 정말 전해질지 걱정함), 인물 이름, 첫 문장을 여는 방식, 마음을 표현하는 문구가 겹치지 않게, 완전히 다른 장면으로 새 이야기를 써라. 등장인물 이름만 바꾸는 것은 새 이야기가 아니다.\n{{list}}",
   "easierLine": "[쉽게] 이전 이야기보다 더 짧은 문장과 쉬운 낱말로, 초등학생에게 익숙한 장면으로 써라. 단, 사례 유형(또는 이야기의 목적)은 그대로 지킨다.",
   "caseTypeMap": "[네 가지 사례 유형 — 학생은 같은 덕목에 대해 네 유형을 차례로 보며 [{{value}}]의 경계를 탐구한다. 각 사례는 자기 유형으로만 읽혀야 하고 다른 유형과 헷갈리면 안 된다]\n- 전형적 사례: 누가 봐도 [{{value}}]{{ida}}.\n- 반대 사례: 누가 봐도 [{{value}}]{{iGa}} 아니다.\n- 관련 사례: [{{value}}]처럼 보이지만 실은 이름이 분명한 다른 개념이다.\n- 경계 사례: [{{value}}]{{ro}} 볼 점과 걸리는 점이 함께 있어 판단이 갈린다.",
   "caseTypes": {
@@ -1214,7 +1215,7 @@ const DEFAULT_PROMPTS = {
     "의도와 결과": "의도와 결과 — 좋은 뜻으로 한 행동이 뜻밖의 문제를 일으키거나 상대에게 정말 도움이 되었는지 불확실하다.",
     "책임과 실천의 한계": "책임과 실천의 한계 — 하고 싶은 마음은 있지만 할 수 있는 일이 일부에 그치거나, 끝까지 책임지기 어렵다."
   },
-  "probeTemplate": "학생이 [{{value}}]에 대해 정리한 뜻: \"{{def2}}\"\n학생에게 보여준 가상 상황(경계 사례): \"{{story}}\"\n학생이 고른 판단: \"{{choiceLabel}}\"\n학생이 쓴 판단 이유: \"{{reason}}\"\n\n너는 학생이 사용한 판단 기준을 스스로 다시 검토하게 하는 소크라테스식 질문을 딱 한 문장만 만든다.\n- 학생의 이유에 쓰인 낱말을 직접 짚고, 그 기준을 이 상황의 다른 쪽 측면([{{value}}]{{ro}} 볼 수 있는 점 또는 그렇게 보기 어려운 점)에 비추어 생각하게 한다. 이유가 양쪽을 모두 짚었으면 그 기준 낱말이 이 상황의 어디까지 들어맞는지 묻는다.\n- '어떻게', '왜', '어떤 점에서'로 묻고, '~아닐까요?', '~지 않나요?'처럼 답을 정해 둔 꼴로 묻지 않는다.\n- 특정한 결론이나 뜻의 수정을 유도하지 않고, 학생의 판단을 칭찬·평가·판정하지 않는다(\"맞아요\", \"좋은 생각이에요\" 등 절대 금지).\n- 판단하기 어려운 이유의 종류 이름(동기, 대상과 범위 등)이나 사례 유형 이름을 쓰지 않는다.\n초등 {{grade}}학년이 이해할 수 있는 쉬운 말로 쓴다.\n\n**반드시 '~요?', '~나요?', '~어요?'처럼 끝나는 존댓말(해요체)로 써라. 반말은 절대 쓰지 마라.**\n\n{{questionStyle}}\n\n질문 문장 하나만 출력하고 다른 설명은 하지 마라.",
+  "probeTemplate": "학생이 [{{value}}]에 대해 정리한 뜻: \"{{def2}}\"\n학생에게 보여준 가상 상황(경계 사례): \"{{story}}\"\n학생이 고른 판단: \"{{choiceLabel}}\"\n학생이 쓴 판단 이유: \"{{reason}}\"\n\n너는 학생이 사용한 판단 기준을 스스로 다시 검토하게 하는 소크라테스식 질문을 딱 한 문장만 만든다.\n- 학생의 이유에 쓰인 낱말을 직접 짚고, 그 기준을 이 상황의 다른 쪽 측면([{{value}}]{{ro}} 볼 수 있는 점 또는 그렇게 보기 어려운 점)에 비추어 생각하게 한다. 이유가 양쪽을 모두 짚었으면 그 기준 낱말이 이 상황의 어디까지 들어맞는지 묻는다.\n- '어떻게', '왜', '어떤 점에서'로 묻고, '~아닐까요?', '~지 않나요?'처럼 답을 정해 둔 꼴로 묻지 않는다.\n- 특정한 결론이나 뜻의 수정을 유도하지 않고, 학생의 판단을 칭찬·평가·판정하지 않는다(\"맞아요\", \"좋은 생각이에요\" 등 절대 금지).\n- 학생을 '당신', '너'로 부르지 않고, 질문 앞에 AI의 해석('~인 것 같은데')을 붙이지 않는다. 예·아니요로 답할 질문('~맞을까요?')도 쓰지 않는다.\n- 판단하기 어려운 이유의 종류 이름(동기, 대상과 범위 등)이나 사례 유형 이름을 쓰지 않는다.\n초등 {{grade}}학년이 이해할 수 있는 쉬운 말로 쓴다.\n\n**반드시 '~요?', '~나요?', '~어요?'처럼 끝나는 존댓말(해요체)로 써라. 반말은 절대 쓰지 마라.**\n\n{{questionStyle}}\n\n질문 문장 하나만 출력하고 다른 설명은 하지 마라.",
   "definitionJudgeTemplate": "너는 초등 {{grade}}학년 도덕 수업에서 학생이 쓴 글을 확인하는 교사다. 학생에게 '[{{value}}]의 뜻을 내 말로 적어 보라'고 했고, 학생이 아래처럼 썼다.\n학생의 글: \"{{answer}}\"\n\n이 글이 [{{value}}]{{iGa}} 무엇인지(어떤 마음·태도·행동인지, 누구를 향하는지)를 말하려고 쓴 문장인지만 판정하라. 뜻이 맞는지 틀리는지, 충분한지는 판정하지 않는다.\n- 통과: 내용이 부족하거나 지도서의 뜻과 달라 보여도, [{{value}}]의 뜻을 말하려고 쓴 글 (예: \"~를 돕는 마음\", \"~를 위해 ~하는 행동\", \"모든 사람을 ~하는 태도\")\n- 탈락: 질문이나 말대꾸, 장난, 덕목과 관계없는 말, 뜻이 아니라 낱말 하나나 느낌만 쓴 글 (예: \"뜻있나요\", \"좋은 거\", \"몰라\", \"사과 맛있다\")\n확신이 서지 않으면 '통과'로 판정하라.\n\n[출력 형식 — 반드시 지킬 것] 아래 두 줄 중 하나만 출력하고, 다른 말은 쓰지 마라.\n판정: 통과\n판정: 탈락"
 };
 let PROMPTS = DEFAULT_PROMPTS;
@@ -1366,6 +1367,15 @@ function screenStudentInput(text) {
   return { ok: true };
 }
 
+// 활동1 사례 답·활동3 판단 이유·되묻는 질문의 답은 '왜 그렇게 생각하는지'가 드러나야 하므로 너무 짧은 글은 다시 쓰게 한다.
+const MIN_SYLLABLES = { caseAnswer: 7, reason: 8, probe: 8 };
+function passesLength(v, minSyl) {
+  if (!minSyl || hangulCount(v) >= minSyl) return true;
+  const now = Date.now();
+  if (now - lastScreenWarnAt > 400) pushAI(meaninglessMessage('short'));
+  lastScreenWarnAt = now;
+  return false;
+}
 // 입력창의 보내기 직전에 쓰는 공통 확인. 걸리면 안내만 보여주고 false를 돌려준다(글은 입력창에 남아 있음).
 let lastScreenWarnAt = 0;
 function passesInputScreen(v) {
@@ -1384,12 +1394,13 @@ function passesInputScreen(v) {
 // 의미 없는 답 거르기 — 학생이 글을 쓰는 모든 칸(활동1 사례 답·뜻 정리, 활동2 뜻 다시 정리, 활동3 답·이유)에 똑같이 적용한다.
 // AI 판정이 아니라 규칙으로만 거른다: 짧아도 뜻이 통하는 답을 AI가 오판해 막던 문제를 피하기 위함.
 // 그래서 "누가 봐도 생각이 담기지 않은 입력"만 막고, 문장으로 쓴 답은 내용과 상관없이 통과시킨다.
-const UNSURE_ANSWERS = ['몰라', '몰라요', '모름', '모르겠다', '모르겠어', '모르겠어요', '모르겠음', '모르겠는데', '몰루', '글쎄', '글쎄요'];
+const UNSURE_ANSWERS = ['잘모르겠다', '잘모르겠어요', '잘모르겠어', '몰라', '몰라요', '모름', '모르겠다', '모르겠어', '모르겠어요', '모르겠음', '모르겠는데', '몰루', '글쎄', '글쎄요'];
 const JUNK_ANSWERS = ['그냥', '그냥요', '없음', '없어', '없어요', '없다', '없는데', '패스', '아무거나', '네', '넵', '넹', '응', '웅', '예', '아니', '아니요', '아뇨', '헐', '대박', '좋아', '싫어', '그래', '그래요'];
 function meaninglessKind(answer) {
   const t = String(answer || '').trim();
   const compact = t.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9]/g, '');
   if (!compact) return 'junk';                                  // 기호·공백뿐 (..., ???)
+  if (/[가-힣][ㄱ-ㅎㅏ-ㅣ]+$/.test(compact)) return 'unfinished'; // 끝에 자음·모음만 남음: 다 쓰기 전에 보낸 글("마음ㅇ")
   const syll = compact.replace(/[^가-힣]/g, '');                 // 완성된 한글 글자만
   const latinWords = (t.match(/[A-Za-z]{2,}/g) || []).length;
   if (!syll && latinWords < 2) return 'junk';                    // 숫자(123), 자음·모음(ㅋㅋ, ㅁㄴㅇㄹ), 자판 두드리기(asdf)
@@ -1408,6 +1419,10 @@ function meaninglessMessage(kind) {
   meaninglessStreak++;
   const base = kind === 'unsure'
     ? '🤔 잘 모르겠어도 괜찮아요! 어떤 부분이 헷갈리는지, 조금이라도 떠오르는 생각을 한 문장으로 써 볼까요?'
+    : kind === 'unfinished'
+    ? '✏️ 글이 끝까지 써지지 않은 것 같아요. 문장을 마무리해서 다시 보내 주세요.'
+    : kind === 'short'
+    ? '🤔 조금 더 자세히 써 볼까요? 왜 그렇게 생각했는지 문장으로 써 주세요.'
     : '🤔 이 답으로는 생각을 알기 어려워요. 떠오른 생각을 문장으로 조금 더 자세히 써 줄래요?';
   return meaninglessStreak >= 3 ? base + '\n\n✋ 어렵다면 손을 들어 선생님께 도움을 요청해도 좋아요.' : base;
 }
@@ -1543,12 +1558,21 @@ function allChecks(spec) {
   const vars = checkVars(spec);
   return bulletList(PROMPTS.commonChecks, vars) + '\n' + bulletList(kindChecks(spec), vars);
 }
+// 여러 학생에게 같은 이름(예: 준호)이 반복되지 않도록, 앞 이야기에 쓰이지 않은 이름 몇 개를 골라 준다.
+const NAME_POOL = ['하윤','서진','도윤','지아','시우','예린','건우','채원','은호','다인','유찬','소율','태오','하린','민재','수아','이안','윤슬','주원','가온','세아','현우','나린','로운','지안','우진','다온','시아','준서','봄이'];
+function nameLine(priorSummaries) {
+  const used = priorSummaries.join(' ');
+  const free = NAME_POOL.filter(n => !used.includes(n));
+  const pick = [];
+  while (free.length && pick.length < 4) pick.push(free.splice(Math.floor(Math.random() * free.length), 1)[0]);
+  return pick.length ? `[인물 이름] 한국 어린이 인물의 이름이 필요하면 ${pick.join(', ')} 가운데에서 고른다. 앞 이야기에 나온 이름은 다시 쓰지 않는다.` : '';
+}
 function sharedParts(value, priorSummaries, easier) {
   return {
     avoidLine: avoidLine(priorSummaries),
     easierLine: easier ? fillTemplate(PROMPTS.easierLine) : '',
     realismLine: fillTemplate(PROMPTS.realismLine || ''),
-    formatLine: fillTemplate(PROMPTS.formatLine),
+    formatLine: [fillTemplate(PROMPTS.formatLine), nameLine(priorSummaries)].filter(Boolean).join('\n'),
     safetyRules: fillTemplate(PROMPTS.safetyRules),
     finalCheckIntro: fillTemplate(PROMPTS.finalCheckIntro),
   };
@@ -1664,7 +1688,10 @@ function cleanStory(raw) {
     // "개념: 동정심"처럼 표시만 있는 줄은 통째로 버리고, "이야기: 본문…"처럼 본문이 이어지면 표시만 뗀다.
     return rest.length <= 12 && !/[.!?。]$/.test(rest) ? [] : [rest];
   });
-  return lines.join(' ').replace(/^["'“‘「]+|["'”’」]+$/g, '').replace(/\s{2,}/g, ' ').trim();
+  return lines.join(' ')
+    .replace(/^[-—–=*·•_~\s]+/, '')                                  // "--- 방학 동안…"처럼 앞에 붙은 구분선
+    .replace(/^(?:이야기|사례|상황|가상\s*상황\s*\d?)\s*[:：]?\s+(?=\S)/, '') // "이야기 아빠가…"처럼 앞에 붙은 표시 낱말
+    .replace(/^["'“‘「]+|["'”’」]+$/g, '').replace(/\s{2,}/g, ' ').trim();
 }
 
 function conceptNames(spec) {
@@ -2028,6 +2055,7 @@ function setInputText(placeholder, onSubmit, opts = {}) {
     const v = ta.value.trim();
     if (!v || state.busy || btn.disabled) return;
     if (!passesInputScreen(v)) return;
+    if (!passesLength(v, opts.minSyllables)) return;
     if (opts.validate) {
       btn.disabled = true; ta.disabled = true; setBusy(true);
       const tid = 'v' + Date.now();
@@ -2116,8 +2144,8 @@ const UI_RENDER = {
   situationBtn: () => setInputChips([{ label: '🟡 가상 상황 보기', onClick: onAct3Situation }]),
   def2Again: () => setInputText('다시 정리한 뜻을 적어보세요 (개인정보는 쓰지 않아요)', onDef2AgainSubmit, { validate: v => validateDefinition(v, 'def2') }),
   judgment: () => renderSituationJudgmentChoice(),
-  reason: () => setInputText('이유를 적어보세요 (개인정보는 쓰지 않아요)', onJudgmentReasonSubmit),
-  probe: () => setInputText('내 생각을 적어보세요 (개인정보는 쓰지 않아요)', onProbeAnswerSubmit),
+  reason: () => setInputText('이유를 적어보세요 (개인정보는 쓰지 않아요)', onJudgmentReasonSubmit, { minSyllables: MIN_SYLLABLES.reason }),
+  probe: () => setInputText('내 생각을 적어보세요 (개인정보는 쓰지 않아요)', onProbeAnswerSubmit, { minSyllables: MIN_SYLLABLES.probe }),
   end: () => {
     if (stageTextEl) stageTextEl.textContent = STAGE_LABEL.end;
     setSaveEnabled(true); // 마지막 안내까지 나온 뒤에 저장 버튼을 켠다
@@ -2320,6 +2348,7 @@ async function generateAndShowCase(easier = false) {
   const ordinal = ['첫','두','세','네'][idx] + ' 번째';
   await sayAI(`📖 ${ordinal} 사례예요 (${idx+1}/4):`);
   await sayAI(text, { box: true, tag: caseTag(type.key, state.value) });
+  pushNote('🤔 ' + type.ask(state.value)); // 탐구 질문(저장 파일용)
   showUI('caseAnswer');
 }
 
@@ -2356,7 +2385,7 @@ function renderCaseInputArea() {
   const btn = document.createElement('button');
   btn.className = 'send';
   btn.innerHTML = '&#10148;';
-  const submit = () => { const v = ta.value.trim(); if (v && !btn.disabled && passesInputScreen(v)) { hideUserTyping(); btn.disabled = true; ta.disabled = true; onCaseAnswer(v); } };
+  const submit = () => { const v = ta.value.trim(); if (v && !btn.disabled && passesInputScreen(v) && passesLength(v, MIN_SYLLABLES.caseAnswer)) { hideUserTyping(); btn.disabled = true; ta.disabled = true; onCaseAnswer(v); } };
   btn.onclick = submit;
   ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } });
   wireTypingIndicator(ta);
@@ -2378,7 +2407,6 @@ function pickMirrorReply() {
 }
 
 async function onCaseAnswer(v) {
-  pushNote('🤔 ' + CASE_TYPES[state.caseIdx].ask(state.value)); // 탐구 질문(저장 파일용)
   pushUser(v);
   setBusy(true);
   inputzoneEl.innerHTML = '';
@@ -2665,6 +2693,9 @@ function probeProblem(q) {
   if (!t) return '질문이 비어 있다.';
   if (/(?:않을까요|않나요|아닐까요|잖아요|지요|겠죠|죠)\s*[?？]?\s*$/.test(t)) return "'~않을까요?', '~지 않나요?'처럼 답을 정해 둔 꼴로 물었다.";
   if (/맞아요|좋은\s*생각|훌륭|잘했|멋진/.test(t)) return '학생의 판단을 칭찬하거나 평가했다.';
+  if (/당신|너는|네가/.test(t)) return "학생을 '당신', '너'로 불렀다. 부르는 말 없이 물어라.";
+  if (/것\s*같은데|것\s*같으니|라고\s*보면/.test(t)) return "질문 앞에 AI의 해석('~인 것 같은데')을 붙여 답을 유도했다.";
+  if (/(?:맞을까요|옳을까요|맞나요|옳은\s*걸까요)\s*[?？]?\s*$/.test(t)) return "'~맞을까요?'처럼 예·아니요로 답을 정해 둔 꼴로 물었다.";
   if (/알려\s*주|말씀해|죄송|학생의\s*(?:답|뜻)을/.test(t)) return '질문 대신 요청에 대한 설명이나 되묻는 말을 썼다.';
   if (!/[?？]\s*$/.test(t)) return '물음표로 끝나는 질문 한 문장이 아니다.';
   if (t.length > 110) return '질문이 너무 길다.';
