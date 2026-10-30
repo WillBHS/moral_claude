@@ -25,6 +25,7 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     margin: 0; padding: 0; height: 100%;
+    overscroll-behavior: none; /* 아이패드 사파리: 화면을 아래로 당겨 새로고침되는 것을 막는다 */
     background: #F1E4F5;
     font-family: 'Noto Sans KR', sans-serif;
     color: var(--ai-text);
@@ -147,6 +148,10 @@
   #reset-btn:hover { background: rgba(255,255,255,0.35); }
   #reset-btn:active .reset-icon { transform: rotate(-90deg); }
   #reset-btn:active { transform: scale(0.95); }
+  #reset-btn.confirm { background: #FF8FA0; }
+  #resume-toast { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); z-index: 50;
+    background: #4A3A55; color: #fff; font-size: 14px; padding: 9px 16px; border-radius: 18px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2); transition: opacity .4s; }
   #transcript {
     flex: 1;
     padding: 22px 14px 16px;
@@ -155,6 +160,7 @@
     gap: 3px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain; /* 대화를 끝까지 올려도 페이지 새로고침으로 이어지지 않게 한다 */
   }
   .row { display: flex; flex-direction: column; margin: 5px 0; max-width: 100%; }
   .row.grouped-row { margin-top: 2px; }
@@ -452,7 +458,7 @@
     </div>
     <button id="share-btn" title="학생 공유 링크 보기" onclick="showRoomInfo()" style="display:none;">🔗</button>
     <button id="save-btn" title="대화 저장하기 (탐구가 모두 끝나면 누를 수 있어요)" onclick="saveTranscript()" disabled><span class="save-icon">💾</span><span class="lbl-long">대화 저장하기</span><span class="lbl-short">저장</span></button>
-    <button id="reset-btn" title="대화 초기화" onclick="resetAll()"><span class="reset-icon">🔄</span><span class="lbl-long">대화 초기화</span><span class="lbl-short">초기화</span></button>
+    <button id="reset-btn" title="대화 초기화" onclick="onResetClick()"><span class="reset-icon">🔄</span><span class="lbl-long">대화 초기화</span><span class="lbl-short">초기화</span></button>
   </header>
   <div id="transcript"></div>
   <div id="inputzone"></div>
@@ -475,6 +481,7 @@ const INITIAL_STATE = {
   q1choice: null, counterHistory: [],
   situationTexts: [], situationReasons: [], currentSituationIdx: 0, currentChoice: '',
   busy: false,
+  ui: null, // 지금 학생에게 보여 주는 입력 화면 이름(새로고침 뒤 이어하기에 쓴다)
 };
 const state = JSON.parse(JSON.stringify(INITIAL_STATE));
 
@@ -2052,6 +2059,119 @@ function setInputText(placeholder, onSubmit, opts = {}) {
 
 function setBusy(v) { state.busy = v; }
 
+// ---------- 새로고침 대비: 진행 상황 자동 저장과 이어하기 ----------
+// 아이패드 사파리는 메모리가 부족하거나 화면이 잠겼다 켜질 때 페이지를 스스로 다시 불러오는 일이 있다.
+// 학생이 버튼이나 입력창을 받는 순간마다 대화와 진행 단계를 이 기기의 브라우저에만 저장해 두고,
+// 페이지가 다시 열리면 그 자리부터 이어서 보여 준다. 서버에는 아무것도 보내지 않는다.
+const PROGRESS_KEY = 'moral_explorer_progress';
+const PROGRESS_MAX_AGE = 6 * 60 * 60 * 1000; // 6시간이 지난 진행 기록은 쓰지 않는다
+function persistProgress() {
+  try {
+    if (!ROOM_CODE || !state.ui) return;
+    const cleanLog = log.filter(l => l.who !== 'thinking' && !l.typing);
+    const saved = { v: 1, room: ROOM_CODE, lesson: lessonSig(), savedAt: Date.now(),
+      state: { ...JSON.parse(JSON.stringify(state)), busy: false }, log: cleanLog };
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(saved));
+  } catch (e) { /* 저장 공간을 쓸 수 없는 브라우저(개인정보 보호 모드 등)에서는 조용히 넘어간다 */ }
+}
+function clearProgress() {
+  try { localStorage.removeItem(PROGRESS_KEY); } catch (e) {}
+}
+function loadProgress() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PROGRESS_KEY) || 'null');
+    if (!saved || saved.v !== 1) return null;
+    if (saved.room !== ROOM_CODE || saved.lesson !== lessonSig()) return null;
+    if (Date.now() - saved.savedAt > PROGRESS_MAX_AGE) return null;
+    if (!saved.state || !saved.state.ui || !UI_RENDER[saved.state.ui]) return null;
+    return saved;
+  } catch (e) { return null; }
+}
+// 입력 화면을 보여 주는 곳은 모두 이 함수를 거친다: 화면 이름을 기록하고, 저장한 뒤, 그린다.
+function showUI(name) {
+  state.ui = name;
+  persistProgress();
+  UI_RENDER[name]();
+}
+// 화면 이름 → 그 화면(버튼·입력창)을 다시 그리는 방법. 지금의 state만 보고 그린다.
+const UI_RENDER = {
+  start: () => setInputChips([{ label: '✏️ 시작할게요', onClick: onStartClicked }]),
+  caseRequest: () => setInputChips([{ label: '🤖 다 썼어요, 사례 보여주세요', onClick: onCaseRequest }]),
+  caseAnswer: () => renderCaseInputArea(),
+  nextCase: () => {
+    const nextOrdinal = ['두','세','네'][state.caseIdx];
+    setInputChips([{ label: `👀 ${nextOrdinal} 번째 사례 만나러 가기`, onClick: onNextCase }]);
+  },
+  def1: () => setInputText('내가 생각하는 뜻을 적어보세요', onDef1Submit, { validate: v => validateDefinition(v, 'def1') }),
+  act2Start: () => setInputChips([{ label: '🌏 활동2 시작하기', onClick: onAct2Start }]),
+  contextMenu: () => setInputChips(contextList().map(c => ({ label: contextChipLabel(c.name), onClick: () => onContextPick(c.name) }))),
+  act2Situation: () => renderAct2SituationInput(state.context),
+  def2: () => setInputText('다시 정리한 뜻을 적어보세요 (개인정보는 쓰지 않아요)', onDef2Submit, { validate: v => validateDefinition(v, 'def2') }),
+  act3Start: () => setInputChips([{ label: '🟡 활동3 시작하기', onClick: onAct3Start }]),
+  q1: () => setInputChips([
+    { label: '🙋 모든 상황에서 맞는다', onClick: () => onQ1Pick(1) },
+    { label: '🤨 맞지 않는 상황이 있을 수도 있다', onClick: () => onQ1Pick(2) },
+    { label: '❓ 모르겠다', onClick: () => onQ1Pick(3) },
+  ]),
+  situationBtn: () => setInputChips([{ label: '🟡 가상 상황 보기', onClick: onAct3Situation }]),
+  def2Again: () => setInputText('다시 정리한 뜻을 적어보세요 (개인정보는 쓰지 않아요)', onDef2AgainSubmit, { validate: v => validateDefinition(v, 'def2') }),
+  judgment: () => renderSituationJudgmentChoice(),
+  reason: () => setInputText('이유를 적어보세요 (개인정보는 쓰지 않아요)', onJudgmentReasonSubmit),
+  probe: () => setInputText('내 생각을 적어보세요 (개인정보는 쓰지 않아요)', onProbeAnswerSubmit),
+  end: () => {
+    if (stageTextEl) stageTextEl.textContent = STAGE_LABEL.end;
+    setSaveEnabled(true); // 마지막 안내까지 나온 뒤에 저장 버튼을 켠다
+    inputzoneEl.innerHTML = '<div class="hint" style="text-align:center;padding:14px;">🙈 오늘의 탐구가 끝났어요. 스스로 정리하는 시간을 가져보세요!</div>';
+  },
+};
+// 저장해 둔 진행 상황이 있으면 그 자리부터 이어서, 없으면 처음부터 시작한다.
+function startOrResume() {
+  const saved = loadProgress();
+  if (!saved) { startApp(); return; }
+  appStarted = true;
+  appliedLessonSig = lessonSig();
+  Object.keys(state).forEach(k => { delete state[k]; });
+  Object.assign(state, JSON.parse(JSON.stringify(INITIAL_STATE)), saved.state, { busy: false });
+  log = saved.log || [];
+  checkpoint = null;
+  renderLog();
+  UI_RENDER[state.ui]();
+  showResumeToast();
+}
+function showResumeToast() {
+  const t = document.createElement('div');
+  t.id = 'resume-toast';
+  t.textContent = '🔄 화면이 다시 열려서, 하던 곳부터 이어서 할게요';
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; }, 3500);
+  setTimeout(() => t.remove(), 4000);
+}
+// 화면이 가려지거나 닫히기 직전에도 한 번 더 저장한다.
+window.addEventListener('pagehide', persistProgress);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') persistProgress(); });
+// 활동 중에 창을 닫거나 뒤로 가려 하면(지원하는 브라우저에서) 한 번 묻는다.
+window.addEventListener('beforeunload', (e) => {
+  if (appStarted && state.ui && state.ui !== 'start' && state.ui !== 'end') { e.preventDefault(); e.returnValue = ''; }
+});
+
+// 대화 초기화 버튼은 실수로 누르는 일이 없도록 두 번 눌러야 초기화된다.
+let resetArmTimer = null;
+function onResetClick() {
+  const b = document.getElementById('reset-btn');
+  const long = b.querySelector('.lbl-long'), short = b.querySelector('.lbl-short');
+  if (!b.classList.contains('confirm')) {
+    b.classList.add('confirm');
+    long.textContent = '한 번 더 누르면 초기화'; short.textContent = '한 번 더';
+    resetArmTimer = setTimeout(() => {
+      b.classList.remove('confirm'); long.textContent = '대화 초기화'; short.textContent = '초기화';
+    }, 3000);
+    return;
+  }
+  clearTimeout(resetArmTimer);
+  b.classList.remove('confirm'); long.textContent = '대화 초기화'; short.textContent = '초기화';
+  resetAll();
+}
+
 // ---------- undo (되돌리기) ----------
 let checkpoint = null;
 function saveCheckpoint(redo) {
@@ -2094,6 +2214,7 @@ function undoTo(snapshot) {
   log.length = snapshot.logLen;
   renderLog();
   snapshot.redo();
+  persistProgress();
 }
 
 // ---------- flow ----------
@@ -2103,7 +2224,7 @@ async function startApp() {
   await sayAI(`👋 안녕하세요! 저는 여러분의 도덕 수업을 도와주는 AI 도우미예요. 오늘 함께 탐구할 덕목과 관련된 다양한 사례와 상황을 제공해 줄게요.`);
   await sayAI(`🧠 하지만 중요한 판단은 언제나 여러분이 직접 해야 해요. 지금부터 저와 함께 의미 있는 도덕 수업을 만들어 보아요!`);
   await sayAI(`🔒 꼭 지켜 주세요! 이름, 전화번호, 주소 같은 개인정보는 쓰지 않기로 해요.`);
-  setInputChips([{ label: '✏️ 시작할게요', onClick: onStartClicked }]);
+  showUI('start');
 }
 
 function onStartClicked() {
@@ -2126,7 +2247,7 @@ async function beginWithValue(name) {
 
 📒 내가 알고 있는 [${state.value}]${hasBatchim(state.value) ? '과' : '와'} 관련있는 사례를 떠올려보세요.`);
   await sayTodo('활동지 ①에 먼저 써보세요. 🖊️');
-  setInputChips([{ label: '🤖 다 썼어요, 사례 보여주세요', onClick: onCaseRequest }]);
+  showUI('caseRequest');
 }
 
 function onCaseRequest() {
@@ -2199,7 +2320,7 @@ async function generateAndShowCase(easier = false) {
   const ordinal = ['첫','두','세','네'][idx] + ' 번째';
   await sayAI(`📖 ${ordinal} 사례예요 (${idx+1}/4):`);
   await sayAI(text, { box: true, tag: caseTag(type.key, state.value) });
-  renderCaseInputArea();
+  showUI('caseAnswer');
 }
 
 function onHarderCaseComplain() {
@@ -2271,22 +2392,24 @@ async function onCaseAnswer(v) {
   await sayTodo('이 이야기를 활동지 ②에 한 줄로 요약해 보세요. 질문에 대한 내 생각은 채팅창에만 쓰면 돼요.');
   const isLast = state.caseIdx === 3;
   if (!isLast) {
-    const nextOrdinal = ['두','세','네'][state.caseIdx];
-    setInputChips([{ label: `👀 ${nextOrdinal} 번째 사례 만나러 가기`, onClick: () => {
-      pushUser(`${nextOrdinal} 번째 사례 만나러 갈게요`);
-      state.caseIdx++;
-      state.caseEasedThisSlot = false;
-      state.caseAnswerRejectCount = 0;
-      generateAndShowCase();
-    }}]);
+    showUI('nextCase');
   } else {
     pushAI(`✨ 네 가지 사례를 모두 살펴봤어요!
 
 네 가지 사례를 탐구해보니, [${state.value}]의 뜻이 무엇인지 알 것 같나요?
 [${state.value}] 뜻을 적어 보세요! ✏️`);
     state.step = 'act1_def1';
-    setInputText('내가 생각하는 뜻을 적어보세요', onDef1Submit, { validate: v => validateDefinition(v, 'def1') });
+    showUI('def1');
   }
+}
+
+function onNextCase() {
+  const nextOrdinal = ['두','세','네'][state.caseIdx];
+  pushUser(`${nextOrdinal} 번째 사례 만나러 갈게요`);
+  state.caseIdx++;
+  state.caseEasedThisSlot = false;
+  state.caseAnswerRejectCount = 0;
+  generateAndShowCase();
 }
 
 async function onDef1Submit(v) {
@@ -2296,14 +2419,14 @@ async function onDef1Submit(v) {
   await sayAI(`✏️ 내가 정리한 [${state.value}]의 뜻은 "${v}"에요.`);
   await sayTodo('활동지 ③에도 정리해 주세요.');
   state.step = 'act2_menu';
-  setInputChips([{ label: '🌏 활동2 시작하기', onClick: onAct2Start }]);
+  showUI('act2Start');
 }
 
 function onAct2Start() {
   pushSection('활동2. 관계 속에서 탐구 확장하기');
   pushUser('활동2 시작할게요');
   pushAI(`🌏 다양한 관계 속에서 [${state.value}]의 의미를 확장해 볼까요? 아래 중 하나를 골라보세요!`);
-  setInputChips(contextList().map(c => ({ label: contextChipLabel(c.name), onClick: () => onContextPick(c.name) })));
+  showUI('contextMenu');
 }
 
 async function onContextPick(ctx, easier = false) {
@@ -2327,7 +2450,7 @@ async function onContextPick(ctx, easier = false) {
   await sayAI(`📖 [${ctx}] ${PROMPTS.situationContexts[ctx] ? '관계 속 ' : ''}이야기예요:`);
   await sayAI(text, { box: true });
   await sayTodo('이야기를 활동지 ④에 한 줄로 요약해 보세요.');
-  renderAct2SituationInput(ctx);
+  showUI('act2Situation');
 }
 
 function renderAct2SituationInput(ctx) {
@@ -2370,7 +2493,7 @@ async function onAct2Next() {
   pushUser('다음 질문으로 넘어갈게요');
   await sayAI(`🖊 처음 정리한 뜻은 "${state.def1}" 였어요. 관계 속 이야기에서 새롭게 발견한 점을 담아 [${state.value}]의 뜻을 다시 정리해서 적어 주세요.`);
   state.step = 'act2_def2';
-  setInputText('다시 정리한 뜻을 적어보세요 (개인정보는 쓰지 않아요)', onDef2Submit, { validate: v => validateDefinition(v, 'def2') });
+  showUI('def2');
 }
 
 async function onDef2Submit(v) {
@@ -2380,18 +2503,14 @@ async function onDef2Submit(v) {
   await sayAI(`📝 새로운 뜻은 "${v}"에요.`);
   await sayTodo('활동지 ⑤에 정리하고 짝과 비교해 보세요.');
   state.step = 'act3_q1';
-  setInputChips([{ label: '🟡 활동3 시작하기', onClick: onAct3Start }]);
+  showUI('act3Start');
 }
 
 function onAct3Start() {
   pushSection('활동3. 가상 상황에서의 적용');
   pushUser('활동3 시작할게요');
   pushAI(`🤔 이제 내가 정리한 [${state.value}]의 뜻이 새로운 상황에 어울리는지 확인해 볼까요? 그 전에 하나만 물어볼게요 — 내가 정리한 [${state.value}]의 뜻이 모든 상황에서 딱 맞을 것 같나요?`);
-  setInputChips([
-    { label: '🙋 모든 상황에서 맞는다', onClick: () => onQ1Pick(1) },
-    { label: '🤨 맞지 않는 상황이 있을 수도 있다', onClick: () => onQ1Pick(2) },
-    { label: '❓ 모르겠다', onClick: () => onQ1Pick(3) },
-  ]);
+  showUI('q1');
 }
 
 async function onQ1Pick(n) {
@@ -2407,7 +2526,7 @@ async function onQ1Pick(n) {
   await sayAI(bridge[n]);
   await sayAI('👀 이제 가상 상황을 만나러 가볼까요?');
   state.step = 'act3_situation';
-  setInputChips([{ label: '🟡 가상 상황 보기', onClick: onAct3Situation }]);
+  showUI('situationBtn');
 }
 
 function counterPriorSummaries(extra = []) {
@@ -2434,14 +2553,15 @@ async function def2IsUsable() {
 function askDef2Again() {
   const V = `[${state.value}]`;
   pushAI(`🤔 가상 상황에 적용하려면 내가 다시 정리한 ${V}의 뜻이 필요해요. 활동지 ⑤를 보며 ${V}의 뜻을 문장으로 다시 써 볼까요?`);
-  setInputText('다시 정리한 뜻을 적어보세요 (개인정보는 쓰지 않아요)', async (v) => {
-    pushUser(v);
-    state.def2 = v;
-    state.def2AIChecked = lastDefAIChecked;
-    await sayAI(`📝 새로운 뜻은 "${v}"에요.`);
-    await sayTodo('활동지 ⑤의 뜻도 고쳐 써 주세요.');
-    await onAct3Situation('가상 상황 보여주세요');
-  }, { validate: v => validateDefinition(v, 'def2') });
+  showUI('def2Again');
+}
+async function onDef2AgainSubmit(v) {
+  pushUser(v);
+  state.def2 = v;
+  state.def2AIChecked = lastDefAIChecked;
+  await sayAI(`📝 새로운 뜻은 "${v}"에요.`);
+  await sayTodo('활동지 ⑤의 뜻도 고쳐 써 주세요.');
+  await onAct3Situation('가상 상황 보여주세요');
 }
 
 async function onAct3Situation(userMsg) {
@@ -2471,7 +2591,7 @@ async function showCurrentSituation() {
   const idx = state.currentSituationIdx;
   await sayAI(`🟡 가상 상황${idx + 1}이에요. 내가 정리한 [${state.value}]의 뜻이 잘 적용되는지 확인해 보세요.`);
   await sayAI(state.situationTexts[idx], { box: true, tag: `가상 상황${idx + 1}` });
-  renderSituationJudgmentChoice();
+  showUI('judgment');
 }
 
 // 가상 상황(현재 보고 있는 것 하나만) 다른 버전으로 재생성 — 판단하기 어려운 이유도 바로 앞 것과 다르게 바꾼다.
@@ -2499,7 +2619,7 @@ async function onRegenCurrentSituation() {
   state.counterHistory.push(text);
   await sayAI(`🟡 다른 가상 상황${idx + 1}이에요:`);
   await sayAI(text, { box: true, tag: `가상 상황${idx + 1}` });
-  renderSituationJudgmentChoice();
+  showUI('judgment');
 }
 
 // 상황을 보여준 뒤: "적용 결과를 골라보세요" + 3지선다 + 다른 가상 상황 버튼.
@@ -2532,7 +2652,7 @@ function onJudgmentChoice(label) {
   pushUser(label);
   state.currentChoice = label;
   pushAI('✏️ 위와 같은 판단을 한 이유를 적어보세요.');
-  setInputText('이유를 적어보세요 (개인정보는 쓰지 않아요)', onJudgmentReasonSubmit);
+  showUI('reason');
 }
 
 // 판단 이유 제출 — AI는 판단의 옳고 그름을 평가하지 않고, 학생이 쓴 이유의 판단 기준을 되묻는 질문을 한 번 한다.
@@ -2572,7 +2692,7 @@ async function onJudgmentReasonSubmit(v) {
   popThinking(tid);
   setBusy(false);
   pushAI('🤔 ' + q.replace(/^🤔\s*/, ''));
-  setInputText('내 생각을 적어보세요 (개인정보는 쓰지 않아요)', onProbeAnswerSubmit);
+  showUI('probe');
 }
 
 // 되묻는 질문에 대한 답 — AI는 반응하지 않고 다음 가상 상황(또는 마무리)으로 넘어간다.
@@ -2591,9 +2711,7 @@ async function finishAct3() {
   await sayAI('🎉 지금부터는 스스로 해보는 시간이에요. 끝까지 최선을 다해 볼까요?🎉');
   await sayAI('💾 화면 위의 [대화 저장하기] 버튼을 눌러 지금까지의 대화를 파일로 저장하고, 선생님이 알려 주신 방법으로 공유해 보세요!');
   state.step = 'end';
-  if (stageTextEl) stageTextEl.textContent = STAGE_LABEL.end;
-  setSaveEnabled(true); // 마지막 안내까지 나온 뒤에 저장 버튼을 켠다
-  inputzoneEl.innerHTML = '<div class="hint" style="text-align:center;padding:14px;">🙈 오늘의 탐구가 끝났어요. 스스로 정리하는 시간을 가져보세요!</div>';
+  showUI('end');
 }
 
 // ---------- 대화 저장하기 ----------
@@ -2669,6 +2787,7 @@ async function saveTranscript() {
 }
 
 function resetAll() {
+  clearProgress();
   setSaveEnabled(false);
   Object.keys(state).forEach(k => { delete state[k]; });
   Object.assign(state, JSON.parse(JSON.stringify(INITIAL_STATE)));
@@ -2972,7 +3091,7 @@ function wireSetupScreen() {
       pushAI('⚠️ 이 링크에는 오늘 수업의 덕목 정보가 없어요. 선생님께 새 수업 링크(또는 QR)를 받아 주세요.');
       return;
     }
-    startApp();
+    startOrResume();
     return;
   }
 
@@ -2988,7 +3107,7 @@ function wireSetupScreen() {
     }
     hideSetupOverlay();
     showShareButton();
-    startApp();
+    startOrResume();
     return;
   }
 
